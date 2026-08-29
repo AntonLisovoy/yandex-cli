@@ -108,6 +108,23 @@ yandex, version 1.0.0
 > the previous step. Fix it on
 > [the troubleshooting page](troubleshooting.md#the-command-is-not-found).
 
+### Turn on Tab completion
+
+Optional, but it saves a lot of typing: there are around 180 commands, and this
+lets `Tab` finish their names for you. Run the line for your shell once:
+
+```bash
+yandex completion zsh  >> ~/.zshrc          # zsh (the default on macOS)
+yandex completion bash >> ~/.bashrc         # bash
+yandex completion fish > ~/.config/fish/completions/yandex.fish
+```
+
+Then close the terminal window and open a new one. Typing `yandex tr` and
+pressing `Tab` should now complete it to `yandex tracker`.
+
+> **Not sure which shell you have?** Run `echo $SHELL`. The last part of what it
+> prints - `zsh`, `bash` or `fish` - is the one to use.
+
 ## 4. Get an OAuth token
 
 An OAuth token is a long string that lets `yandex` act in Tracker on your
@@ -345,9 +362,17 @@ Typing `help` lists the groups:
   quit / exit           leave the REPL
 ```
 
+`Tab` completes command names as you go, and shows what each one does next to
+it - the same tree the `help` listing summarises, only navigable. Type a `-`
+first and it completes the options of the command you are on instead.
+
 `quit`, `exit` or `Ctrl`+`D` leaves and returns you to the ordinary prompt. The
 up arrow recalls what you typed before, including from earlier sessions:
 history is kept in `~/.yandex-cli/history`.
+
+Commands are also faster here than one at a time: the connection to Yandex is
+opened once and reused for the whole session, so only the first one pays for
+it.
 
 ## Where to go next
 

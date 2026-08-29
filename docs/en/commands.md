@@ -108,6 +108,7 @@ These have no domain in front of them:
 | `export` | Writing a search result to a file as JSON, CSV or Markdown. |
 | `skill` | The agent skill file that ships inside the binary. |
 | `repl` | Interactive mode, also what you get by running `yandex` with nothing after it. |
+| `completion` | The Tab-completion script for bash, zsh or fish. |
 
 ## The session: what the CLI remembers
 

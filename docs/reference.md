@@ -14,6 +14,7 @@ translated.
 ## Contents
 
 - [`yandex`](#yandex)
+  - [`yandex completion`](#yandex-completion)
   - [`yandex config`](#yandex-config)
     - [`yandex config backend`](#yandex-config-backend)
     - [`yandex config check`](#yandex-config-check)
@@ -250,13 +251,29 @@ Options:
   --help                   Show this message and exit.
 
 Commands:
-  config   Inspect configuration, verify access, manage profiles.
-  export   Write results to files.
-  repl     Interactive session (the default when no subcommand is given).
-  session  Current context, audit trail and undo.
-  skill    The agent skill file that ships with this CLI.
-  tracker  Yandex Tracker: queues, issues, boards, sprints, users, projects.
-  wiki     Yandex Wiki pages, tables, files, comments and access.
+  completion  Print the shell completion script for SHELL.
+  config      Inspect configuration, verify access, manage profiles.
+  export      Write results to files.
+  repl        Interactive session (the default when no subcommand is given).
+  session     Current context, audit trail and undo.
+  skill       The agent skill file that ships with this CLI.
+  tracker     Yandex Tracker: queues, issues, boards, sprints, users, projects.
+  wiki        Yandex Wiki pages, tables, files, comments and access.
+```
+
+## yandex completion
+
+```
+Usage: yandex completion [OPTIONS] {bash|zsh|fish}
+
+  Print the shell completion script for SHELL.
+
+    bash:  yandex completion bash >> ~/.bashrc
+    zsh:   yandex completion zsh  >> ~/.zshrc
+    fish:  yandex completion fish > ~/.config/fish/completions/yandex.fish
+
+Options:
+  --help  Show this message and exit.
 ```
 
 ## yandex config
