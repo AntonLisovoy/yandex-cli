@@ -1,8 +1,22 @@
+**English** | [Русский](README.ru.md)
+
 # yandex
 
-A stateful command line interface to **Yandex Tracker** and **Yandex Wiki**.
+## What it does
+
+`yandex` is a command line interface to **Yandex Tracker** and **Yandex
+Wiki**. It remembers which issue you are working on, so you name it once
+instead of pasting the same key into every command:
+
+```bash
+yandex session use-issue TREK-1                          # once
+yandex tracker issue get                                 # reads TREK-1
+yandex tracker issue comment-add -t "Ready for review."  # comments on TREK-1
+```
 
 ## Install
+
+Two ways, and you only need one.
 
 ### Homebrew (macOS)
 
@@ -10,90 +24,54 @@ A stateful command line interface to **Yandex Tracker** and **Yandex Wiki**.
 brew install AntonLisovoy/tap/yandex-cli
 ```
 
-### Shell installer (macOS, Linux)
+### Shell installer (macOS and Linux)
 
 ```bash
 curl -LsSf https://raw.githubusercontent.com/AntonLisovoy/yandex-cli/main/install.sh | sh
 ```
 
-The installer verifies the SHA256 of the download, unpacks into
-`~/.local/share/yandex-cli/<version>` and links `~/.local/bin/yandex`.
+It checks the download against the published SHA256, unpacks it into
+`~/.local/share/yandex-cli/<version>` and links `~/.local/bin/yandex`. Builds
+are published for `macos-arm64` and `linux-x86_64`.
 
-Builds are published for `macos-arm64` and `linux-x86_64`.
-
-## Configure
-
-Authentication - one of:
-
-- `TRACKER_TOKEN` - OAuth token
-- `TRACKER_IAM_TOKEN` - Yandex Cloud IAM token
-
-Organization - exactly one of:
-
-- `TRACKER_CLOUD_ORG_ID` - Yandex Cloud
-- `TRACKER_ORG_ID` - on-premise
-
-Get an OAuth token: <https://yandex.ru/support/tracker/ru/concepts/access>
+## First run
 
 ```bash
-export TRACKER_TOKEN=y0_AgAAA...
-export TRACKER_ORG_ID=123456
+yandex config set-profile work --token y0_... --org-id 123456
 yandex config check
 yandex tracker queue list
 ```
 
-## Use
+[Getting started](docs/en/getting-started.md) explains every one of those
+steps, including how to get a token and which organization id is yours.
 
-```
-yandex tracker <group> <command>   # queue, issue, attachment, board, sprint,
-                                   # user, field, entity, project, automation,
-                                   # template
-yandex wiki <group> <command>      # page, grid, access, attachment, upload,
-                                   # comment, operation (plus search, whoami)
-yandex config|session|export ...
-yandex repl                        # interactive mode
-```
+## Documentation
 
-`yandex --help` lists everything.
+- **[Getting started](docs/en/getting-started.md)** - install and first run.
+- **[Configuration](docs/en/configuration.md)** - profiles, environment
+  variables, read-only modes.
+- **[Commands](docs/en/commands.md)** - what it can do, and how the session,
+  history and undo work.
+- **[AI agents](docs/en/ai-agents.md)** - handing the CLI to a coding agent.
+- **[Troubleshooting](docs/en/troubleshooting.md)** - every error, and the fix.
+- **[Command reference](docs/reference.md)** - the `--help` of every command.
 
 ## Use it from an AI agent
 
-The CLI ships an agent skill documenting every command, and installs it for you -
-the file lives inside the binary, so there is nothing to hunt for.
+The CLI carries its own manual for agents - a skill file describing every
+command - inside the binary, so there is nothing to download.
 
 ```bash
 yandex skill install
 ```
 
-That asks which agents you use and whether to install for the whole user account
-or only the current directory. To skip the questions:
-
-```bash
-yandex skill install -a claude-code -g -y      # this user, Claude Code
-yandex skill install -a cursor -a codex -y     # this directory, two agents
-yandex skill install --dir ./somewhere/yandex  # an explicit directory
-```
-
-Supported agents: `claude-code`, `cursor`, `codex`, `copilot`, `gemini`, and
-`universal` for anything that reads `.agents/skills/`. A project install goes to
-`.agents/skills/yandex/` for every agent except Claude Code, which reads
-`.claude/skills/yandex/`.
-
-For an agent not on that list, print the skill and put it wherever that tool
-keeps its instructions:
-
-```bash
-yandex skill show > AGENTS.md
-yandex skill show               # print it, paste into your agent's own format
-yandex skill path               # or just tell me where the file is
-```
-
-Re-run the install after upgrading. The skill is copied rather than linked, so
-it describes the version you had when you installed it.
+It asks which agents you use and where to put it, then writes the file where
+they read it. [The guide](docs/en/ai-agents.md) covers those questions, the
+flags that skip them, and agents that are not on the list.
 
 ## Issues
 
-Bug reports and feature requests: <https://github.com/AntonLisovoy/yandex-cli/issues>
+<https://github.com/AntonLisovoy/yandex-cli/issues>
 
 ## License
 
