@@ -233,6 +233,9 @@ Usage: yandex [OPTIONS] [COMMAND] [ARGS]...
 
 Options:
   --json                   Machine-readable JSON output.
+  --out FILE               Write the result to a file and print only a summary.
+  --select TEXT            Keep only these dotted paths, e.g. --select key,status.display
+  --pretty                 Indent JSON output for reading.
   --profile TEXT           Configuration profile to use.
   --env-file TEXT          dotenv file with TRACKER_* variables.
   --token TEXT             OAuth token (TRACKER_TOKEN).

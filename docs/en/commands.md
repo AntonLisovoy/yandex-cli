@@ -52,6 +52,23 @@ yandex tracker issue find --help
 Each one lists what is available *below* that point, so four questions get you
 from "what is there" to "what does this command take".
 
+## Global flags
+
+| Flag | What it does |
+|---|---|
+| `--json` | Print exactly one JSON document instead of a table. |
+| `--out FILE` | Write the result to `FILE` and print only a small summary; implies `--json`. |
+| `--select PATH,...` | Keep only these dotted paths from the result; implies `--json`. |
+| `--pretty` | Indent JSON for reading; it is compact by default. |
+| `--profile NAME` | Use a saved configuration profile for this command. |
+| `--read-only` / `--wiki-read-only` | Refuse Tracker / Wiki write commands. |
+| `--limit-queues Q1,Q2` | Restrict which queues may be touched at all. |
+| `--timeout SECONDS` | HTTP timeout for this command. |
+
+`--profile` and the read-only/queue-restriction flags are covered in
+[configuration](configuration.md); `--out`, `--select` and `--pretty` are
+covered below, in [JSON output for scripts](#json-output-for-scripts).
+
 ## Command groups
 
 There are two domains - Tracker and Wiki - plus a handful of commands that
@@ -793,9 +810,13 @@ Three guarantees make this safe to parse:
   `BackendError`, `AccessDenied`, `ReadOnlyError`, `MissingArgument` and
   `ExportError`; [troubleshooting](troubleshooting.md) goes through each.
 
-`jq` is the usual tool for picking things out of the result:
+`jq` is the usual tool for picking things out of the result. Turn on
+`set -o pipefail` first: without it, a pipe swallows the CLI's exit code, so a
+failed command's `{"error": ...}` envelope turns into `jq`'s `null` instead of
+a script noticing anything went wrong.
 
 ```bash
+set -o pipefail
 yandex --json tracker issue find -q "Queue: TREK" | jq -r '.[] | "\(.key)\t\(.summary)"'
 ```
 
@@ -804,6 +825,61 @@ TREK-1	Design the CLI command tree
 TREK-2	Implement the session store
 TREK-3	Write the export pipeline
 ```
+
+### Sending a result to a file instead of your terminal
+
+A wiki page's content or an issue's description can be far bigger than
+anything you actually want on screen - or, for an agent driving the CLI, in
+its context window. `--out FILE` writes the result to `FILE` and prints only a
+small summary in its place:
+
+```bash
+yandex --out kb.md wiki page get --slug team/kb --content
+```
+
+```json
+{"id":11,"slug":"team/kb","title":"Knowledge base","page_type":"page","output":"/Users/you/kb.md","bytes":8231,"lines":142}
+```
+
+A long text body - a wiki page's content, an issue's description - is written
+to the file as **raw text**, not as a JSON string with its newlines escaped,
+so `grep -n "..." kb.md` and `sed -n '120,180p' kb.md` work on it directly. A
+structured result (a listing, a queue, a board) is written as JSON instead,
+and the summary reports `items` rather than `lines`.
+
+`--out` implies `--json`, silently overwrites an existing file, writes nothing
+if the command fails, and is refused on the four commands that already write
+their own file through `--output` or `-o`: `issue attachment-download`,
+`wiki attachment download`, `wiki attachment download-url` and
+`export issues`. It has no effect inside the REPL.
+
+### Narrowing a result client-side with `--select`
+
+`--select PATH,...` keeps only the dotted paths you name, without a query
+language. The result keeps its nesting, so `jq` paths written against it still
+work:
+
+```bash
+yandex --select key tracker queue list
+yandex --select results.title wiki search -q onboarding --type page
+```
+
+Write a path the way the field appears in the output - `updatedAt`, not
+`updated_at`. A path that runs into a list is applied to each of its items,
+so `results.title` above turns every search hit into just its title. A path
+that matches nothing yields `null`: a missing field and a real `null` look the
+same once the result has been serialized, so double-check the path before
+concluding a field is actually empty. Applying `--select` to a result that is
+a single scalar, rather than an object or a list, is an error. `--select`
+implies `--json` and has no effect inside the REPL.
+
+### Reading the JSON by eye with `--pretty`
+
+By default `--json` prints compact JSON, on the theory that a script reading
+it does not care about whitespace. Add `--pretty` when a person is going to
+read the output instead - it indents the same document instead of changing
+what is in it, and combines with `--out` and `--select` the same way `--json`
+does.
 
 ## The full reference
 
