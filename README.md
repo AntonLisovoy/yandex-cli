@@ -69,6 +69,14 @@ It asks which agents you use and where to put it, then writes the file where
 they read it. [The guide](docs/en/ai-agents.md) covers those questions, the
 flags that skip them, and agents that are not on the list.
 
+The same file is published in this repository as
+[`skills/yandex/SKILL.md`](https://github.com/AntonLisovoy/yandex-cli/blob/main/skills/yandex/SKILL.md),
+so an agent can also take it without the CLI:
+
+```bash
+npx skills add AntonLisovoy/yandex-cli
+```
+
 ## Issues
 
 <https://github.com/AntonLisovoy/yandex-cli/issues>

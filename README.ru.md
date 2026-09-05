@@ -72,6 +72,14 @@ yandex skill install
 [Руководство](docs/ru/ai-agents.md) разбирает эти вопросы, флаги, которые их
 пропускают, и агентов, которых нет в списке.
 
+Тот же файл опубликован в этом репозитории как
+[`skills/yandex/SKILL.md`](https://github.com/AntonLisovoy/yandex-cli/blob/main/skills/yandex/SKILL.md),
+так что агент может забрать его и без CLI:
+
+```bash
+npx skills add AntonLisovoy/yandex-cli
+```
+
 ## Сообщить о проблеме
 
 <https://github.com/AntonLisovoy/yandex-cli/issues>

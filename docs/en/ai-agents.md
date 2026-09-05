@@ -37,16 +37,21 @@ either pulls the skill in.
 yandex skill install
 ```
 
-That copies `SKILL.md` out of the binary into the directory your agent reads
-skills from. In a terminal it first asks the two questions covered below; once
-you have answered them it prints the file it wrote:
+That copies `SKILL.md` out of the binary into `.agents/skills/yandex/`, the
+directory the agents share, and links each agent's own directory to it. In a
+terminal it first asks the two questions covered below; once you have answered
+them it prints what it wrote:
 
 ```
 Installed the yandex skill to /Users/you/work/.agents/skills/yandex/SKILL.md
+Linked /Users/you/work/.claude/skills/yandex -> ../../.agents/skills/yandex
 ```
 
+There is one file, so an upgrade of it reaches every agent at once. The links
+are relative, so moving or copying the project keeps them working.
+
 Run it from the project directory you want the agent to have Tracker access in.
-An existing copy is replaced, so running it again is always safe.
+An existing install is replaced, so running it again is always safe.
 
 ### Answering the questions
 
@@ -130,11 +135,14 @@ cover.
 | `gemini` | `.agents/skills/yandex/` | `~/.gemini/skills/yandex/` |
 | `universal` | `.agents/skills/yandex/` | `~/.config/agents/skills/yandex/` |
 
-**A project install goes to `.agents/skills/yandex/` for every agent except
-Claude Code**, which reads `.claude/skills/yandex/`. `.agents/skills/` is a
-shared convention, so one install covers Cursor, Codex, Copilot and Gemini at
-once - which is why naming several of them writes a single file and prints a
-single line:
+**The file itself always lands in the `universal` row** - `.agents/skills/yandex/`
+in a project, `~/.config/agents/skills/yandex/` for the user account. Every
+other directory in the table is a symbolic link to it, made only for the agents
+you named.
+
+`.agents/skills/` is a shared convention, so one directory already covers
+Cursor, Codex, Copilot and Gemini in a project - which is why naming several of
+them writes a single file, links nothing and prints a single line:
 
 ```bash
 yandex skill install -a cursor -a codex -y
@@ -173,15 +181,40 @@ It prints one absolute path, inside the installed bundle. Read it, do not edit
 it: the next upgrade installs into its own directory, and an edit made there
 stays behind with the old version.
 
+## Without the CLI
+
+The same `SKILL.md` is also published on its own, at
+[`skills/yandex/SKILL.md`](https://github.com/AntonLisovoy/yandex-cli/blob/main/skills/yandex/SKILL.md)
+in the public repository. An agent can be given the skill before the CLI is
+installed, or on a machine where it never will be:
+
+```bash
+npx skills add AntonLisovoy/yandex-cli
+```
+
+That is the [skills CLI](https://skills.sh/docs/cli). It writes the file into
+the current project, or into your home directory with `-g`. To read it without
+installing anything:
+
+```bash
+npx skills use AntonLisovoy/yandex-cli@yandex
+```
+
+The published copy is refreshed by the same job that publishes this
+documentation, so it describes the newest release - not necessarily the version
+you have installed. When the two differ, `yandex skill install` is the one that
+tells the truth about your binary.
+
 ## After upgrading
 
-`skill install` **copies** the file; it does not link to it. The copy in your
-project therefore describes the version of the CLI that was installed on the
-day you ran it, and it will keep describing that version forever.
+The links go between your own directories; **nothing links into the installed
+binary**. `skill install` copies the file out of it, so the copy in your project
+describes the version of the CLI that was installed on the day you ran it, and
+it will keep describing that version forever.
 
-This is deliberate. Each release unpacks into its own directory, so a symbolic
-link would still resolve after an upgrade - and would quietly go on serving the
-old skill, which is a worse failure than a stale copy you can see.
+This is deliberate. Each release unpacks into its own directory, so a link into
+the binary would still resolve after an upgrade - and would quietly go on
+serving the old skill, which is a worse failure than a stale copy you can see.
 
 So after every upgrade of the CLI, run the install again:
 
@@ -192,6 +225,31 @@ yandex skill install -y
 Nothing breaks if you forget: the agent works from a slightly older list of
 commands. But a command added in the new version is one the agent does not know
 exists.
+
+## When links are not available
+
+Some filesystems refuse symbolic links, and Windows only allows them with
+Developer Mode on. When one cannot be made - or when the agent's directory
+already holds files that are not ours - the install copies `SKILL.md` there
+instead and says so:
+
+```
+Could not link it: ... That directory now holds a copy, so run the install
+again after upgrading the CLI.
+```
+
+Everything works; the only difference is that such a directory holds a copy of
+its own, so the install has to be run again after every upgrade.
+
+Nothing you did not put there is ever removed. The install deletes exactly one
+file - the `SKILL.md` an earlier install wrote - and only then an empty
+directory. A plain file standing where a skill directory belongs is left where
+it is, and the install says which one and moves on:
+
+```
+Left /Users/you/work/.claude/skills/yandex alone: it is a file, not a
+directory. Move it aside and install again.
+```
 
 ## Keeping an agent safe
 
