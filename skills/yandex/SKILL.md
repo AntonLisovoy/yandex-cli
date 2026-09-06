@@ -217,4 +217,4 @@ Wiki specifics worth knowing before you call anything:
 
 ## Version
 
-1.2.0
+1.2.1
