@@ -55,6 +55,8 @@ steps, including how to get a token and which organization id is yours.
 - **[AI agents](docs/en/ai-agents.md)** - handing the CLI to a coding agent.
 - **[Troubleshooting](docs/en/troubleshooting.md)** - every error, and the fix.
 - **[Command reference](docs/reference.md)** - the `--help` of every command.
+- **MCP server** - `yandex mcp` serves Tracker and Wiki to AI agents over stdio;
+  see [AI agents](docs/en/ai-agents.md#mcp-server).
 
 ## Use it from an AI agent
 

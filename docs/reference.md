@@ -25,6 +25,7 @@ translated.
     - [`yandex config use-profile`](#yandex-config-use-profile)
   - [`yandex export`](#yandex-export)
     - [`yandex export issues`](#yandex-export-issues)
+  - [`yandex mcp`](#yandex-mcp)
   - [`yandex repl`](#yandex-repl)
   - [`yandex session`](#yandex-session)
     - [`yandex session clear`](#yandex-session-clear)
@@ -257,6 +258,7 @@ Commands:
   completion  Print the shell completion script for SHELL.
   config      Inspect configuration, verify access, manage profiles.
   export      Write results to files.
+  mcp         Serve Tracker and Wiki to an AI agent over MCP (stdio).
   repl        Interactive session (the default when no subcommand is given).
   session     Current context, audit trail and undo.
   skill       The agent skill file that ships with this CLI.
@@ -418,6 +420,20 @@ Options:
   --with-description      Keep descriptions.
   --overwrite             Replace an existing file.
   --help                  Show this message and exit.
+```
+
+## yandex mcp
+
+```
+Usage: yandex mcp [OPTIONS]
+
+  Serve Tracker and Wiki to an AI agent over MCP (stdio).
+
+  Configuration flags go before the command:
+    yandex --profile agent --read-only mcp
+
+Options:
+  --help  Show this message and exit.
 ```
 
 ## yandex repl

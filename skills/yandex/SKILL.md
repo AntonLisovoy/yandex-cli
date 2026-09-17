@@ -63,6 +63,18 @@ stay at the top level.
 | `export` | `issues` (`--format json\|csv\|md`) |
 | `repl` | interactive mode (also the default with no subcommand) |
 
+## MCP server
+
+`yandex mcp` speaks the MCP protocol on stdio instead of running one command:
+41 curated Tracker and Wiki tools over the same code these commands use. Reach
+for it when your harness connects to MCP servers and you want the tools listed
+in your context; stay with the commands above when you are already driving a
+shell. Configuration flags go before the subcommand, as in
+`yandex --profile agent --read-only mcp`, and read-only modes simply do not
+register the write tools. Setup for a client, the full tool list and the error
+prefixes tools answer with are in
+[MCP server](../../docs/storefront/docs/en/ai-agents.md#mcp-server).
+
 ## Agent usage
 
 1. **Always pass `--json`** — the command then prints exactly one JSON document
@@ -217,4 +229,4 @@ Wiki specifics worth knowing before you call anything:
 
 ## Version
 
-1.2.1
+1.3.0

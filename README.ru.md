@@ -57,6 +57,8 @@ yandex tracker queue list
 - **[Решение проблем](docs/ru/troubleshooting.md)** — каждая ошибка и лекарство
   от неё.
 - **[Справочник команд](docs/reference.md)** — вывод `--help` каждой команды.
+- **MCP-сервер** — `yandex mcp` отдает Tracker и Wiki AI-агентам по stdio, см.
+  [AI-агенты](docs/ru/ai-agents.md#mcp-сервер).
 
 ## Использование из AI-агента
 

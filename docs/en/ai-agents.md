@@ -251,6 +251,122 @@ Left /Users/you/work/.claude/skills/yandex alone: it is a file, not a
 directory. Move it aside and install again.
 ```
 
+## MCP server
+
+`yandex mcp` serves Tracker and Wiki to an agent over the Model Context Protocol
+(stdio). Use it when the agent has no shell, or when you want typed tools instead
+of commands. The skill and the MCP server can be used together.
+
+The server reads the same configuration as every other command. Flags go
+**before** `mcp`:
+
+```json
+{
+  "mcpServers": {
+    "yandex": {
+      "command": "yandex",
+      "args": ["--profile", "agent", "--read-only", "mcp"]
+    }
+  }
+}
+```
+
+- **Claude Code:** `claude mcp add yandex -- yandex --profile agent mcp`
+- **Claude Desktop, Cursor:** the JSON above in the app's MCP settings. Desktop apps
+  do not see your shell's `PATH`, so write the full path to the binary, e.g.
+  `/opt/homebrew/bin/yandex` (find it with `which yandex`).
+- **Codex:** in `~/.codex/config.toml`:
+
+  ```toml
+  [mcp_servers.yandex]
+  command = "yandex"
+  args = ["--profile", "agent", "mcp"]
+  ```
+
+`.env` resolves from the *MCP client's* working directory, not your project -
+the client picks the cwd the server starts in, and a desktop app's cwd is
+rarely your project folder. Put credentials in a profile (`--profile`) or in
+the client's own `env` map instead of relying on a project-local `.env`.
+
+### Tools
+
+41 tools: 20 to read Tracker, 9 to write to it, 6 to read Wiki and 6 to write to it.
+Listings return `{items, next_cursor}`; long texts (issue descriptions, page
+content) come in windows the agent can read on from. There are no tools that
+delete anything, administer queues, or upload and download files.
+
+**Tracker, read**
+
+| Tool | What it does |
+|---|---|
+| `tracker_issue_get` | Fetch one issue by key; the description comes as a text window |
+| `tracker_issue_search` | Search issues with the Tracker query language |
+| `tracker_issue_count` | Count issues matching a query |
+| `tracker_issue_comments` | List an issue's comments |
+| `tracker_issue_links` | List an issue's links to other issues |
+| `tracker_issue_transitions` | List the status transitions available on an issue |
+| `tracker_issue_checklist` | List an issue's checklist items |
+| `tracker_issue_worklogs` | List an issue's worklogs |
+| `tracker_issue_attachments` | List an issue's attachment metadata (no download) |
+| `tracker_issue_changelog` | List an issue's field history |
+| `tracker_queue_list` | List the queues visible to the token |
+| `tracker_queue_get` | Fetch one queue's settings |
+| `tracker_queue_fields` | List the fields a queue's issues can carry |
+| `tracker_user_me` | Fetch the authenticated user |
+| `tracker_user_search` | Look up users by name or login |
+| `tracker_reference` | List statuses, issue types, priorities, resolutions or global fields |
+| `tracker_board_list` | List agile boards |
+| `tracker_sprint_list` | List a board's sprints |
+| `tracker_entity_search` | Search projects, portfolios or goals |
+| `tracker_entity_get` | Fetch one project, portfolio or goal |
+
+**Tracker, write**
+
+| Tool | What it does |
+|---|---|
+| `tracker_issue_create` | Create an issue |
+| `tracker_issue_update` | Replace fields on an issue |
+| `tracker_issue_transition` | Move an issue through a named transition, optionally with a resolution |
+| `tracker_comment_add` | Add a comment |
+| `tracker_comment_update` | Replace a comment's text |
+| `tracker_issue_link` | Link two issues by relationship |
+| `tracker_worklog_add` | Log time on an issue |
+| `tracker_checklist_add` | Append checklist items |
+| `tracker_checklist_item_update` | Update one checklist item |
+
+**Wiki, read**
+
+| Tool | What it does |
+|---|---|
+| `wiki_page_get` | Fetch a page's metadata, or its content as a text window |
+| `wiki_page_descendants` | List a page's child pages |
+| `wiki_page_comments` | List a page's comments |
+| `wiki_page_attachments` | List a page's attachment metadata |
+| `wiki_page_grids` | List a page's grids (dynamic tables) |
+| `wiki_grid_get` | Fetch one grid's column schema and rows |
+
+**Wiki, write**
+
+| Tool | What it does |
+|---|---|
+| `wiki_page_create` | Create a page |
+| `wiki_page_update` | Replace a page's content |
+| `wiki_page_append` | Append to a page's content |
+| `wiki_comment_add` | Add a comment to a page |
+| `wiki_grid_rows_add` | Append rows to a grid |
+| `wiki_grid_cells_update` | Set cell values in a grid |
+
+### Read-only and restricted modes
+
+- `--read-only` removes the Tracker write tools from the list, `--wiki-read-only`
+  the Wiki ones; the agent never sees them.
+- `--read-only-queues` keeps the write tools, and a write into a listed queue fails.
+- `--limit-queues` narrows search, counts, queue lists, links and lookups by key to
+  the listed queues. It is a guard against mistakes, not a security boundary: fields
+  of an allowed issue (its parent, its history) can still name issues elsewhere, and
+  boards, sprints, projects and users are not filtered. What the token can read is
+  the real boundary.
+
 ## Keeping an agent safe
 
 An agent driving `yandex` has exactly the access your token has. It can close

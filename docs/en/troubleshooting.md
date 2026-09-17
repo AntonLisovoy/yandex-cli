@@ -291,6 +291,20 @@ instead - it never picks the flag up in the first place:
 curl -LsSf https://raw.githubusercontent.com/AntonLisovoy/yandex-cli/main/install.sh | sh
 ```
 
+## The MCP server does not start
+
+- **The client says the server failed or exited.** Open the client's MCP log: the
+  server writes the reason to stderr, e.g. missing credentials or an unknown profile.
+- **`No such option` in the log.** A flag was put after `mcp`. Flags go before it:
+  `["--profile", "agent", "mcp"]`.
+- **`command not found` / `ENOENT`.** Desktop apps do not inherit your shell's
+  `PATH`. Put the full path from `which yandex` into `command`.
+- **A tool you expected is missing.** `--read-only` and `--wiki-read-only` hide the
+  write tools. Check the `args` and the profile.
+- **Config looks right but the token/org is missing.** `.env` resolves from the
+  MCP client's working directory, not your project - a desktop app's cwd rarely
+  is your project folder. Use `--profile` or the client's own `env` map instead.
+
 ## Upgrading
 
 With Homebrew:
