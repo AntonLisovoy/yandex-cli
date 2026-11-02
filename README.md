@@ -89,13 +89,11 @@ Apache-2.0
 
 ## Calendar
 
-Calendar is a limited preview. `calendar list`, `calendar agenda` and
-`calendar event get/create` use an independent OAuth + CalDAV backend:
-no Tracker token or org ID required.
-Start with [Calendar setup](docs/en/getting-started.md#calendar-setup).
-Series/participant events are read-only; single personal writes have no undo.
-Yandex deletion is disabled; server-added ORGANIZER blocks updates to tested
-personal events. Corporate-account discovery/create/get passed live.
-Live agenda with EXDATE, shifted instances and DST passed a targeted check.
-Consumer OAuth remains unverified; this preview does not promise full Yandex
-CRUD. See [Calendar limits](docs/en/commands.md#calendar).
+Calendar remains a limited preview. It supports discovery, agenda, event reads,
+personal-event creation and conditional single-event updates, including attendee
+changes on servers with automatic scheduling. A targeted live test passed for meeting edits and attendee changes; the owner
+confirmed receipt of invitation, update and cancellation notifications. Yandex deletion stays disabled because a live server
+accepted stale-tag DELETE. Consumer-account OAuth parity is assumed; no separate live check is required. Minimum grants remain unverified.
+
+See [Calendar setup](docs/en/getting-started.md#calendar-setup) and
+[commands](docs/en/commands.md#calendar).

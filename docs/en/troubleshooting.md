@@ -389,16 +389,20 @@ those, the problem is usually reproducible on the first try.
   and the full `CALENDAR_USERNAME`; Tracker/IAM credentials and org IDs do not help.
 - **Auth/forbidden (401/403):** confirm the new token's actual Calendar grant and
   calendar access. Application edits do not upgrade an old token. Discovery/create/get
-  worked with one corporate account's existing OAuth token; consumer-account OAuth
-  remains unverified; see [configuration](configuration.md#calendar-oauth-and-settings).
+  worked with one corporate account's existing OAuth token. The same client flow
+  is assumed for consumer accounts; see [configuration](configuration.md#calendar-oauth-and-settings).
 - **No calendar selected/not found:** run `calendar list`; use an exact discovered
   `id`, not the name or UID. Set `CALENDAR_DEFAULT` or pass `--calendar`.
 - **Empty results:** `[]` calendars or `items: []` agenda is valid, not a failed write.
-- **Read-only/unsupported write:** series and ORGANIZER/ATTENDEE events are
-  read-only; `--calendar-read-only` is separate from Tracker/Wiki modes.
-- **Yandex update/deletion unavailable:** Yandex added ORGANIZER to tested events
-  without participants, so their update is blocked. Yandex deletion is disabled
-  because the server accepted stale-tag DELETE; no force/bypass option exists.
+- **Read-only/unsupported write:** series and multi-VEVENT writes are unsupported;
+  `--calendar-read-only` is independent of Tracker/Wiki. Meeting updates require
+  discovered automatic scheduling and SERVER/default scheduling modes. CLIENT/NONE
+  modes or failed discovery block the write; there is no notification bypass.
+- **organizer-required:** select `--organizer` from `details.organizer_addresses`
+  only to initialize a missing organizer when adding the first attendee. Existing
+  organizer aliases are preserved, never replaced or matched against the login.
+- **Yandex deletion unavailable:** stale-tag DELETE was accepted live; deletion
+  remains disabled with no force/bypass option.
 - **Conflict/412 or missing/weak ETag:** read the event again and review the change;
   never force an overwrite or blindly retry. Calendar has no undo.
 - **Timeout/uncertain outcome or read-back failure:** the write may have succeeded.

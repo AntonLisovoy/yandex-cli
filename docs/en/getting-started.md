@@ -390,16 +390,18 @@ it.
 
 ## Calendar setup
 
-Calendar is a limited preview for reading calendars/events and creating single
-personal events. Yandex deletion is disabled, and server-added ORGANIZER blocks
-updates to tested personal events. Live discovery/create/get passed on one
+Calendar remains a limited preview. It supports discovery, agenda, event reads,
+personal-event creation and conditional single-event updates, including attendee
+changes on servers with automatic scheduling. A targeted live test passed for meeting edits and attendee changes; the owner
+confirmed receipt of invitation, update and cancellation notifications. Yandex deletion stays disabled because a live server
+accepted stale-tag DELETE. Consumer-account OAuth parity is assumed; no separate live check is required. Minimum grants remain unverified. Live discovery/create/get passed on one
 corporate account. A targeted live agenda check with EXDATE, shifted instances
-and DST also passed; consumer OAuth remains unverified.
+and DST also passed.
 
 Install the same binary, then obtain a Calendar-capable token through your
 existing OAuth application as described in
-[configuration](configuration.md#calendar-oauth-and-settings). Live ordinary-user
-OAuth compatibility is still unverified; no Tracker setup is needed.
+[configuration](configuration.md#calendar-oauth-and-settings). The same client OAuth
+flow is assumed for ordinary accounts; no Tracker setup is needed.
 
 Set `YANDEX_OAUTH_TOKEN` (or higher-priority `CALENDAR_TOKEN`) through your local
 secret manager/environment. Set `CALENDAR_USERNAME` to your full email address:

@@ -230,7 +230,7 @@ Wiki specifics worth knowing before you call anything:
 
 ## Version
 
-1.4.0
+1.5.0
 
 ## Calendar
 
@@ -241,18 +241,20 @@ Tracker/IAM. Defaults: `https://caldav.yandex.ru/`, timezone UTC; optional
 `--oauth-token-stdin` or `--calendar-token-stdin` (mutually exclusive), not token
 arguments; config show fully redacts them. Obtain a new token via the existing
 OAuth application's registered flow after changing permissions; old tokens do
-not gain rights automatically. `calendar:all` is only a candidate scope; ordinary
-user OAuth/live Yandex compatibility remains unverified. Calendar ships as a
-limited preview: list/agenda/get/create, without a full Yandex CRUD guarantee.
-Yandex deletion is disabled; server-added ORGANIZER blocks updates to tested
-personal events. Do not suggest bypassing these restrictions. Corporate-account
-discovery/create/get passed live. A targeted live agenda check also passed with
-EXDATE, shifted instances and an IANA timezone DST transition; broader coverage
-and consumer OAuth remain unverified.
+not gain rights automatically. `calendar:all` is only a candidate scope. Ordinary-account OAuth uses the same
+client flow by assumption. Targeted live meeting scheduling passed; this is
+not a general guarantee of notification delivery.
+
+Calendar remains a limited preview. It supports discovery, agenda, event reads,
+personal-event creation and conditional single-event updates, including attendee
+changes on servers with automatic scheduling. A targeted live test passed for meeting edits and attendee changes; the owner
+confirmed receipt of invitation, update and cancellation notifications. Yandex deletion stays disabled because a live server
+accepted stale-tag DELETE. Consumer-account OAuth parity is assumed; no separate live check is required. Minimum grants remain unverified.
 
 ```bash
 yandex --json config check --service calendar
 yandex --json calendar list
+yandex --json calendar capabilities --calendar CALENDAR_ID
 # Use exact discovered id, not display name; UID is unique only within calendar.
 yandex --json calendar agenda --day 2026-11-02 --timezone Europe/Moscow
 yandex --json calendar agenda --week 2026-11-02 --calendar CALENDAR_ID
@@ -269,7 +271,7 @@ yandex --json calendar event delete UID --calendar CALENDAR_ID --if-match '"actu
 - Agenda period `[from,to)` is at most 366 days; week means Monday–Monday. Limit
   100 by default, 1–1000; check `truncated`. JSON shape is
   `{items, truncated, from, to, timezone}`; `--select items.title` is supported.
-- Get returns `{event, exceptions}`; series remain master plus detached overrides.
+- Get returns `{event, exceptions, capabilities, mutation}` (optional metadata may be null); series remain master plus detached overrides.
   If the master is absent, `event` is null and every known detached instance is
   in `exceptions`; agenda emits only these explicit instances. They remain read-only.
   Agenda expands RRULE/RDATE (including PERIOD)/EXDATE and moved/cancelled
@@ -282,15 +284,78 @@ yandex --json calendar event delete UID --calendar CALENDAR_ID --if-match '"actu
   with exclusive end (`--all-day --start 2026-11-02 --end 2026-11-03` = one day).
   Update time requires both bounds; cannot switch all-day/timed. Omitted fields
   stay; empty description/location clears them. Empty patch/title is invalid.
-- Only single personal events are writable. Reject series/individual occurrences,
-  multiple VEVENT and ORGANIZER/ATTENDEE events; no invitations/RSVP or scheduling.
-  Calendar has **no undo** and no calendar creation/sharing/offline sync.
-- Read before an authorized update/delete. Require strong ETag; `--if-match` must
-  match the current exact quoted ETag. HTTP 412/stale ETag is a conflict: reread
-  and review, never force overwrite. Create uses `If-None-Match: *`.
-- **Never blindly repeat** create/update/delete after timeout or read-back error.
-  The mutation may have succeeded. Check reported calendar ID/UID first; verify
-  current state before deciding on another write. No automatic mutation retries.
-- `--calendar-read-only` is an independent root flag and survives REPL. Discovery
-  diagnostics do not prove write access. History retains IDs only, not bodies.
-  Calendar is CLI/REPL only: `yandex mcp` exposes Tracker/Wiki, no Calendar tools.
+Updates support single events, including meetings. Series, detached occurrences
+and multi-VEVENT resources remain read-only. Create remains personal, with no
+attendee or recurrence flags. RSVP/delegation, organizer reassignment, calendar
+creation/sharing, offline sync and calendar undo are unsupported. DELETE on
+compliant servers remains limited to personal events without ORGANIZER/ATTENDEE;
+Yandex resource deletion is disabled. Removing an attendee through PUT is not
+resource deletion.
+
+**Compatibility change:** update and compliant-server delete now require caller
+`--if-match`. Read with `event get`, review the event and pass its exact strong
+quoted `event.etag`. The service compares that version at GET and sends the same
+version in PUT; stale ETags or HTTP 412 stop the operation without merging,
+overwriting or retrying. The ETag returned after a write may change again later.
+Create uses `If-None-Match: *` and a unique UID.
+
+Repeat `--add-attendee ADDRESS` and `--remove-attendee ADDRESS` to combine attendee
+deltas with detail changes in one conditional PUT. Add accepts email or mailto;
+remove uses the exact stored `attendees[].address`, including non-mailto addresses.
+Omission preserves participants. Mail domain/scheme casing is normalized, while
+local parts and aliases remain distinct. Duplicate patch entries are deduplicated;
+adding and removing the same address is invalid. Existing additions/absent removals
+are no-ops; ambiguous stored duplicates fail. An entirely unchanged patch skips
+PUT and sequence/timestamp changes. New attendees have NEEDS-ACTION and RSVP=TRUE;
+retained CN, ROLE, PARTSTAT, RSVP, scheduling status and other parameters survive.
+Unknown ICS properties, alarms and timezone definitions are preserved.
+
+Existing ORGANIZER and its parameters are preserved, including aliases on arbitrary
+domains. Login/address equality never grants or denies permission. When adding the
+first attendee without an organizer, one discovered owner address is selected
+automatically; multiple choices return `organizer-required` with
+`details.organizer_addresses`. Select one using `--organizer ADDRESS`; this flag
+only initializes a missing organizer. No usable discovered address is unsupported.
+
+An update involving attendees before or after the patch requires discovered RFC
+6638 automatic server scheduling. Failed discovery blocks mutation, as does
+explicit CLIENT/NONE SCHEDULE-AGENT on organizer or attendees. SERVER/default is
+supported; there is no SMTP/manual invitation fallback or silent-update promise.
+Server ACLs and scheduling preconditions decide authorization. Server scheduling
+may send updates/REQUEST or CANCEL to removed attendees, including the last one.
+Removing everyone preserves ORGANIZER and the event. Effective edits increment
+SEQUENCE and update DTSTAMP/LAST-MODIFIED.
+
+`calendar capabilities --calendar ID` returns `automatic_scheduling`,
+`organizer_addresses` and an `operations` map. `event get` adds event-specific
+`capabilities`. Each operation exposes `supported`, `permission`
+(`allowed`/`denied`/`unknown`), `reason`, `requires_etag` and
+`may_notify_attendees`. These are advisory; unknown role/permission is not a grant,
+and every write rechecks current state and server conditions.
+
+Successful update output adds `mutation`: `operation`, `outcome: verified`,
+`changed`, `may_notify_attendees` and `delivery: unknown`. `verified` confirms stored
+state after readback, not organizer identity, acceptance or invitation delivery.
+Read output includes organizer/attendee `address`, `schedule_agent` and
+`schedule_status` plus attendee response fields. Server SCHEDULE-STATUS is evidence
+to inspect, not a blanket delivery guarantee; removed attendees' delivery remains
+unknown. JSON errors add safe `code`, `operation`, `calendar_id`, `uid`, `outcome`
+and `next_action` where available, plus safe DAV precondition names/namespaces.
+
+| Outcome | Meaning and next step |
+|---|---|
+| `not_attempted` | No mutation attempted; fix input, permissions or unsupported operation as directed. |
+| `rejected` | Server rejected the write; conflicts require rereading and reconsidering. |
+| `unknown` | Transport failed after a mutation attempt; inspect the event, never blindly retry. |
+| `accepted_unverified` | Write accepted but readback failed; inspect the event before another write. |
+| `verified` | Stored state read back; delivery remains separate and unknown. |
+
+Errors use `next_action`: `fix-input`, `reread-and-reconsider`, `check-permissions`,
+`inspect-event` or `unsupported-operation`. Reconcile uncertainty with the reported
+calendar ID and stable UID. Supply `--uid` on create for reliable cross-invocation
+recovery; errors also include a generated UID when available. An existing UID is
+a conflict, never proof that an earlier create succeeded or permission to overwrite.
+
+`--calendar-read-only` is an independent root flag and survives REPL. Discovery
+diagnostics do not prove write access. History retains IDs only, not bodies.
+Calendar is CLI/REPL only: `yandex mcp` exposes Tracker/Wiki, no Calendar tools.

@@ -16,6 +16,7 @@ translated.
 - [`yandex`](#yandex)
   - [`yandex calendar`](#yandex-calendar)
     - [`yandex calendar agenda`](#yandex-calendar-agenda)
+    - [`yandex calendar capabilities`](#yandex-calendar-capabilities)
     - [`yandex calendar event`](#yandex-calendar-event)
       - [`yandex calendar event create`](#yandex-calendar-event-create)
       - [`yandex calendar event delete`](#yandex-calendar-event-delete)
@@ -264,7 +265,7 @@ Options:
   --help                   Show this message and exit.
 
 Commands:
-  calendar    Yandex Calendar preview: read calendars and create personal events.
+  calendar    Yandex Calendar preview: read, create and edit single events.
   completion  Print the shell completion script for SHELL.
   config      Inspect configuration, verify access, manage profiles.
   export      Write results to files.
@@ -281,18 +282,19 @@ Commands:
 ```
 Usage: yandex calendar [OPTIONS] COMMAND [ARGS]...
 
-  Yandex Calendar preview: read calendars and create personal events.
+  Yandex Calendar preview: read, create and edit single events.
 
-  Yandex deletion is disabled. Events with ORGANIZER or ATTENDEE cannot be updated. Consumer OAuth
-  remains unverified.
+  Meeting edits may notify attendees through server scheduling. Yandex deletion is disabled.
+  Targeted live meeting scheduling checks passed.
 
 Options:
   --help  Show this message and exit.
 
 Commands:
-  agenda  Read a day, week or half-open date range across calendars.
-  event   Read or change single personal events.
-  list    List accessible calendars and their canonical IDs.
+  agenda        Read a day, week or half-open date range across calendars.
+  capabilities  Discover advisory operation support and permissions without writes.
+  event         Read events, create personal events or conditionally edit single events.
+  list          List accessible calendars and their canonical IDs.
 ```
 
 ## yandex calendar agenda
@@ -313,12 +315,24 @@ Options:
   --help           Show this message and exit.
 ```
 
+## yandex calendar capabilities
+
+```
+Usage: yandex calendar capabilities [OPTIONS]
+
+  Discover advisory operation support and permissions without writes.
+
+Options:
+  --calendar TEXT
+  --help           Show this message and exit.
+```
+
 ## yandex calendar event
 
 ```
 Usage: yandex calendar event [OPTIONS] COMMAND [ARGS]...
 
-  Read or change single personal events.
+  Read events, create personal events or conditionally edit single events.
 
 Options:
   --help  Show this message and exit.
@@ -357,12 +371,12 @@ Usage: yandex calendar event delete [OPTIONS] UID
 
   Delete a single personal event on a compliant server.
 
-  Disabled on Yandex: the server accepted stale conditional deletions. No force option is available.
-  Calendar deletion has no undo.
+  Disabled on Yandex: the server accepted stale conditional deletions. Requires --if-match. No force
+  option is available. Calendar deletion has no undo.
 
 Options:
   --calendar TEXT
-  --if-match TEXT
+  --if-match TEXT  Required strong ETag returned by event get.
   --help           Show this message and exit.
 ```
 
@@ -385,8 +399,8 @@ Usage: yandex calendar event update [OPTIONS] UID
 
   Patch supplied fields, preserving omitted event data.
 
-  Series and events with ORGANIZER or ATTENDEE are read-only. Yandex adds ORGANIZER to tested
-  personal events, so their update is blocked.
+  Requires --if-match from event get. Meeting edits may notify attendees; delivery is unknown.
+  Series and organizer reassignment are unsupported.
 
 Options:
   --calendar TEXT
@@ -396,8 +410,11 @@ Options:
   --timezone TEXT
   --description TEXT
   --location TEXT
-  --if-match TEXT
-  --help              Show this message and exit.
+  --add-attendee TEXT     Add a plain email or mailto address.
+  --remove-attendee TEXT  Remove an exact stored calendar address.
+  --organizer TEXT        Initialize a missing organizer from discovered owner addresses.
+  --if-match TEXT         Required strong ETag returned by event get.
+  --help                  Show this message and exit.
 ```
 
 ## yandex calendar list

@@ -390,9 +390,11 @@ Inspect its registered permissions (also available at
 permission offered to that application. One application's settings showed
 `calendar:all` and granular Calendar read/write permissions selected. An existing
 OAuth token worked for discovery/create/get on one corporate account; this
-does not isolate the minimum token grants or verify consumer-account OAuth.
-Yandex update remains blocked on server-added ORGANIZER, and deletion is
-explicitly disabled because stale-tag DELETE was accepted; see
+does not isolate the minimum token grants. Consumer-account OAuth parity is an
+accepted client-side assumption, not a separate live-test requirement.
+Meeting updates now use conditional writes and automatic server scheduling. A targeted live scheduling check passed
+with an owner-controlled recipient; notification receipt was confirmed by the owner. Yandex deletion is disabled because stale-tag
+DELETE was accepted; see
 [current Calendar limits](commands.md#calendar). Full compatibility remains open.
 Yandex's [CalDAV OAuth example](https://www.yandex.ru/support/yandex-360/business/admin/ru/security-service-applications)
 concerns service applications and does not establish ordinary-user compatibility.

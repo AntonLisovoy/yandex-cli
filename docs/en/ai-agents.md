@@ -421,16 +421,24 @@ The four settings are covered in full, with the message each one produces, in
 
 ## Calendar from an agent
 
-Use the installed skill and shell commands; Calendar is not exposed by `yandex
-mcp`. Check `config check --service calendar`, then `calendar list` and select
-an exact ID. Calendar needs its own OAuth/full email settings, without Tracker
-credentials. Corporate-account OAuth discovery/create/get passed live; consumer
-OAuth remains unverified. Yandex updates are blocked on server-added ORGANIZER;
-Yandex deletion is explicitly disabled because stale-tag DELETE was accepted.
+Use the installed skill and shell; `yandex mcp` has no Calendar tools. Run
+`config check --service calendar`, select an exact ID from `calendar list`, then
+`calendar capabilities --calendar ID`. Calendar uses its own OAuth/full email
+settings. Give reading agents `--calendar-read-only` or `CALENDAR_READ_ONLY=1`.
 
-Give reading agents `--calendar-read-only` or `CALENDAR_READ_ONLY=1`.
-Read a target with `event get` before an authorized write; only single personal
-events without organizer/attendees are writable. Preserve its UID/calendar ID
-and use the returned strong ETag. Calendar writes have **no undo**.
-After a timeout or read-back failure, check the reported UID in that calendar;
-never blindly repeat create/update/delete. See [calendar commands](commands.md#calendar).
+Read `event get` before every authorized update. Carry that exact strong ETag
+in mandatory `--if-match`; conflicts require rereading and reconsidering the patch.
+Use repeatable `--add-attendee`/`--remove-attendee` deltas, preserving omitted
+participants. Organizer aliases are preserved; server ACLs decide permission.
+Capabilities are advisory, and unknown permission does not authorize a write.
+Meeting updates may notify attendees; storage verification is not delivery proof.
+For `unknown`/`accepted_unverified`, inspect the reported calendar ID/UID before
+another write. Supply a stable `--uid` for recoverable creates; an existing UID
+is a conflict, not proof of prior success. Calendar has no undo.
+
+Calendar remains a limited preview. It supports discovery, agenda, event reads,
+personal-event creation and conditional single-event updates, including attendee
+changes on servers with automatic scheduling. A targeted live test passed for meeting edits and attendee changes; the owner
+confirmed receipt of invitation, update and cancellation notifications. Yandex deletion stays disabled because a live server
+accepted stale-tag DELETE. Consumer-account OAuth parity is assumed; no separate live check is required. Minimum grants remain unverified. See [commands](commands.md#calendar) for organizer initialization,
+scheduling modes, result metadata and remaining write limits.
