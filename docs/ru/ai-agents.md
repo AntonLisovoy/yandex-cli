@@ -425,3 +425,19 @@ yandex --profile agent tracker issue find -q "Queue: TREK AND Updated: week()"
 
 Все четыре настройки разобраны целиком, с сообщением, которое выдаёт каждая, в
 [настройке](configuration.md#режим-только-для-чтения-и-другие-ограничения).
+
+## Календарь из агента
+
+Используйте установленный skill и shell-команды: `yandex mcp` не предоставляет
+Календарь. Выполните `config check --service calendar`, затем `calendar list` и
+выберите точный ID. Нужны собственные OAuth/full email настройки без Tracker.
+Discovery/create/get с OAuth корпоративного аккаунта прошли live; OAuth
+потребительского аккаунта не проверен. Update Яндекса блокируется из-за добавленного
+сервером ORGANIZER; удаление Яндекса явно отключено: сервер принял DELETE с устаревшим ETag.
+
+Для чтения задайте `--calendar-read-only` или `CALENDAR_READ_ONLY=1`.
+Перед разрешённой записью прочитайте цель через `event get`; менять можно лишь
+одиночные личные события без organizer/attendees. Сохраните UID/calendar ID и
+используйте возвращённый сильный ETag. У календарных операций **нет undo**.
+После timeout или read-back error проверьте UID в этом календаре; никогда не
+повторяйте create/update/delete вслепую. См. [команды Календаря](commands.md#календарь).

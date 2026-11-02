@@ -382,3 +382,32 @@ Then open an issue at
 
 Add `yandex --version` if the report is about behaviour that changed. With
 those, the problem is usually reproducible on the first try.
+
+## Calendar errors
+
+- **Missing credentials/username:** set `CALENDAR_TOKEN` or `YANDEX_OAUTH_TOKEN`
+  and the full `CALENDAR_USERNAME`; Tracker/IAM credentials and org IDs do not help.
+- **Auth/forbidden (401/403):** confirm the new token's actual Calendar grant and
+  calendar access. Application edits do not upgrade an old token. Discovery/create/get
+  worked with one corporate account's existing OAuth token; consumer-account OAuth
+  remains unverified; see [configuration](configuration.md#calendar-oauth-and-settings).
+- **No calendar selected/not found:** run `calendar list`; use an exact discovered
+  `id`, not the name or UID. Set `CALENDAR_DEFAULT` or pass `--calendar`.
+- **Empty results:** `[]` calendars or `items: []` agenda is valid, not a failed write.
+- **Read-only/unsupported write:** series and ORGANIZER/ATTENDEE events are
+  read-only; `--calendar-read-only` is separate from Tracker/Wiki modes.
+- **Yandex update/deletion unavailable:** Yandex added ORGANIZER to tested events
+  without participants, so their update is blocked. Yandex deletion is disabled
+  because the server accepted stale-tag DELETE; no force/bypass option exists.
+- **Conflict/412 or missing/weak ETag:** read the event again and review the change;
+  never force an overwrite or blindly retry. Calendar has no undo.
+- **Timeout/uncertain outcome or read-back failure:** the write may have succeeded.
+  Read by the reported calendar ID and UID before deciding on another mutation.
+- **Complexity/size limit:** full collections and historical recurrence candidates
+  count, including data outside the requested period. A narrower date range may
+  still fail. Select fewer calendars or simplify the series in your calendar app.
+- **Invalid calendar data:** agenda rejects EXRULE and THISANDFUTURE overrides;
+  use `event get` for the unexpanded series. For ambiguous/nonexistent DST local
+  input, supply an explicit UTC offset.
+
+`config check --service calendar` checks discovery only, not write permission.

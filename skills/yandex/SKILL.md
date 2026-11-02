@@ -1,12 +1,13 @@
 ---
 name: "yandex"
-description: "Drive Yandex Tracker and Yandex Wiki from the command line: search and read issues, create/update/close them, comment, manage checklists, links and attachments, log time, run boards and sprints, manage projects/portfolios/goals, administer queues and their automation, edit wiki pages and dynamic tables, and export result sets to JSON/CSV/Markdown. Use when a task involves Yandex Tracker issues, queues, boards, sprints, projects, automation or Yandex Wiki content."
+description: "Use when a task involves Yandex Tracker issues, queues, boards, sprints, projects or automation; Yandex Wiki pages or dynamic tables; or Yandex Calendar schedules, event details and single personal events through the yandex CLI."
 license: "Apache-2.0"
 ---
 
 # yandex
 
-A stateful CLI over the Yandex Tracker v3 and Yandex Wiki v1 REST APIs. The API
+A stateful CLI over the Yandex Tracker v3 and Yandex Wiki v1 REST APIs,
+plus an independent OAuth + CalDAV Calendar backend. The API
 clients ship inside the tool; there is no separate backend to install.
 
 ## Install and configure
@@ -17,7 +18,7 @@ brew install AntonLisovoy/tap/yandex-cli
 curl -LsSf https://raw.githubusercontent.com/AntonLisovoy/yandex-cli/main/install.sh | sh
 ```
 
-Required environment (a local `.env` is read automatically):
+Tracker/Wiki required environment (a local `.env` is read automatically):
 
 - `TRACKER_TOKEN` (OAuth) **or** `TRACKER_IAM_TOKEN` (Yandex Cloud IAM)
 - exactly one of `TRACKER_ORG_ID` (on-premise) / `TRACKER_CLOUD_ORG_ID` (Cloud)
@@ -26,7 +27,7 @@ Optional: `TRACKER_READ_ONLY`, `WIKI_READ_ONLY`, `TRACKER_LIMIT_QUEUES`,
 `TRACKER_API_BASE_URL`, `WIKI_API_BASE_URL`, `TRACKER_TIMEOUT`,
 `YANDEX_CLI_SESSION` (session file path).
 
-Verify before doing anything else:
+Verify Tracker/Wiki before using those domains:
 
 ```bash
 yandex --json config check
@@ -34,8 +35,8 @@ yandex --json config check
 
 ## Command groups
 
-Every API command lives under one of two domains — `yandex tracker ...` and
-`yandex wiki ...`. Configuration, session, export and the REPL are shared and
+API commands live under `yandex tracker ...`, `yandex wiki ...` and
+`yandex calendar ...`. Configuration, session, export and the REPL are shared and
 stay at the top level.
 
 | Group | Commands |
@@ -229,4 +230,67 @@ Wiki specifics worth knowing before you call anything:
 
 ## Version
 
-1.3.0
+1.4.0
+
+## Calendar
+
+Calendar needs no Tracker token/organization. Use `CALENDAR_TOKEN` then shared
+`YANDEX_OAUTH_TOKEN`, plus full email `CALENDAR_USERNAME`. Never fall back to
+Tracker/IAM. Defaults: `https://caldav.yandex.ru/`, timezone UTC; optional
+`CALENDAR_TIMEZONE`, `CALENDAR_DEFAULT`, `CALENDAR_READ_ONLY`. Profiles accept
+`--oauth-token-stdin` or `--calendar-token-stdin` (mutually exclusive), not token
+arguments; config show fully redacts them. Obtain a new token via the existing
+OAuth application's registered flow after changing permissions; old tokens do
+not gain rights automatically. `calendar:all` is only a candidate scope; ordinary
+user OAuth/live Yandex compatibility remains unverified. Calendar ships as a
+limited preview: list/agenda/get/create, without a full Yandex CRUD guarantee.
+Yandex deletion is disabled; server-added ORGANIZER blocks updates to tested
+personal events. Do not suggest bypassing these restrictions. Corporate-account
+discovery/create/get passed live. A targeted live agenda check also passed with
+EXDATE, shifted instances and an IANA timezone DST transition; broader coverage
+and consumer OAuth remain unverified.
+
+```bash
+yandex --json config check --service calendar
+yandex --json calendar list
+# Use exact discovered id, not display name; UID is unique only within calendar.
+yandex --json calendar agenda --day 2026-11-02 --timezone Europe/Moscow
+yandex --json calendar agenda --week 2026-11-02 --calendar CALENDAR_ID
+yandex --json calendar agenda --from 2026-11-02T00:00 --to 2026-11-09T00:00 --limit 200
+yandex --json calendar event get UID --calendar CALENDAR_ID
+yandex --json calendar event create --calendar CALENDAR_ID --title Focus --start 2026-11-02T10:00 --end 2026-11-02T11:00 --timezone Europe/Moscow --uid UNIQUE_UID
+yandex --json calendar event update UID --calendar CALENDAR_ID --description @notes.txt --location '' --if-match '"actual-etag"'
+yandex --json calendar event delete UID --calendar CALENDAR_ID --if-match '"actual-etag"'
+```
+
+- Event commands require explicit `--calendar` or `CALENDAR_DEFAULT`; never select
+  the first calendar. Agenda defaults to today/all discovered calendars when no
+  default is set. `[]`/`items: []` are valid empty results.
+- Agenda period `[from,to)` is at most 366 days; week means Monday–Monday. Limit
+  100 by default, 1–1000; check `truncated`. JSON shape is
+  `{items, truncated, from, to, timezone}`; `--select items.title` is supported.
+- Get returns `{event, exceptions}`; series remain master plus detached overrides.
+  If the master is absent, `event` is null and every known detached instance is
+  in `exceptions`; agenda emits only these explicit instances. They remain read-only.
+  Agenda expands RRULE/RDATE (including PERIOD)/EXDATE and moved/cancelled
+  overrides; EXRULE and THISANDFUTURE are explicitly unsupported by agenda.
+- Full collections are fetched (8 MiB XML, 2 MiB/resource, 10,000 DAV responses).
+  The shared 10,000 processed-candidate budget includes historical, excluded and
+  cancelled occurrences. Narrowing dates alone may not help: select fewer
+  calendars or simplify series. Failures do not return partial agendas.
+- Use explicit offsets for ambiguous/nonexistent DST times. All-day uses dates
+  with exclusive end (`--all-day --start 2026-11-02 --end 2026-11-03` = one day).
+  Update time requires both bounds; cannot switch all-day/timed. Omitted fields
+  stay; empty description/location clears them. Empty patch/title is invalid.
+- Only single personal events are writable. Reject series/individual occurrences,
+  multiple VEVENT and ORGANIZER/ATTENDEE events; no invitations/RSVP or scheduling.
+  Calendar has **no undo** and no calendar creation/sharing/offline sync.
+- Read before an authorized update/delete. Require strong ETag; `--if-match` must
+  match the current exact quoted ETag. HTTP 412/stale ETag is a conflict: reread
+  and review, never force overwrite. Create uses `If-None-Match: *`.
+- **Never blindly repeat** create/update/delete after timeout or read-back error.
+  The mutation may have succeeded. Check reported calendar ID/UID first; verify
+  current state before deciding on another write. No automatic mutation retries.
+- `--calendar-read-only` is an independent root flag and survives REPL. Discovery
+  diagnostics do not prove write access. History retains IDs only, not bodies.
+  Calendar is CLI/REPL only: `yandex mcp` exposes Tracker/Wiki, no Calendar tools.

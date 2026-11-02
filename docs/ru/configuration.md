@@ -2,8 +2,8 @@
 
 # Настройка
 
-Прежде чем что-то сделать, `yandex` должен знать две вещи: кто вы (токен) и о
-какой организации спрашивать (идентификатор). На этой странице собраны все
+Для Tracker/Wiki нужны токен и идентификатор организации. Календарю нужны
+собственные OAuth-настройки и полный email; организация Tracker не требуется. На этой странице собраны все
 способы это сообщить, места, где сказанное хранится, и то, как ограничить CLI
 одним только чтением.
 
@@ -387,3 +387,54 @@ yandex --profile cloud tracker queue list
   org_id: 123456
   cloud_org_id: -
 ```
+
+## OAuth и настройки Календаря
+
+Используйте существующее приложение в [Яндекс OAuth](https://oauth.yandex.ru/).
+Проверьте его права в настройках (или по адресу
+`https://oauth.yandex.ru/client/<client_id>/info`) и включите доступное ему право
+Календаря. В настройках одного приложения были выбраны `calendar:all` и отдельные
+права чтения/записи Календаря. Существующий OAuth-токен прошёл discovery/create/get
+на одном корпоративном аккаунте; минимальные права токена не выделены,
+OAuth потребительского аккаунта не проверен. Update Яндекса блокируется из-за
+добавленного сервером ORGANIZER, а удаление явно отключено: сервер принял DELETE
+с устаревшим ETag. См. [текущие ограничения](commands.md#календарь).
+Полная совместимость остаётся неподтверждённой.
+[Пример OAuth для CalDAV](https://www.yandex.ru/support/yandex-360/business/admin/ru/security-service-applications)
+относится к сервисным приложениям и не доказывает совместимость обычного токена.
+
+Получите новый токен через настроенный в вашем приложении
+[OAuth-flow](https://www.yandex.ru/dev/id/doc/ru/codes/code-url), используя его
+ClientID, зарегистрированный Redirect URI и выданные права Календаря.
+Изменение приложения не добавляет права старому токену: пройдите авторизацию
+заново и замените токен. CLI принимает уже выданные токены; browser login и
+refresh-flow отсутствуют. Не вставляйте токены в чат или аргументы команд.
+
+| Поле профиля | Переменная окружения | По умолчанию |
+|---|---|---|
+| `oauth_token` | `YANDEX_OAUTH_TOKEN` | не задано |
+| `calendar_token` | `CALENDAR_TOKEN` | не задано; приоритет над общим OAuth |
+| `calendar_username` | `CALENDAR_USERNAME` | не задано; полный email, например `you@yandex.ru` |
+| `calendar_base_url` | `CALENDAR_BASE_URL` | `https://caldav.yandex.ru/` |
+| `calendar_timezone` | `CALENDAR_TIMEZONE` | `UTC` |
+| `calendar_default` | `CALENDAR_DEFAULT` | не задано; обнаруженный ID календаря |
+| `calendar_read_only` | `CALENDAR_READ_ONLY` | `false` |
+
+Календарь не использует `TRACKER_TOKEN` или IAM как fallback. Действуют обычные
+приоритеты профилей и окружения, включая приоритет явно указанного `--profile`.
+Используйте окружение или передайте токен из локального хранилища в одну из
+взаимоисключающих stdin-опций:
+
+```bash
+yandex config set-profile calendar --calendar-username you@yandex.ru --calendar-timezone Europe/Moscow --oauth-token-stdin < /secure/local/oauth-token
+# Для отдельного токена Календаря используйте --calendar-token-stdin.
+yandex --profile calendar config check --service calendar
+```
+
+Stdin не выводится. `config show` полностью скрывает оба новых токена, но
+профили хранят их открытым текстом: защищайте локальный config-файл.
+После `calendar list` сохраните точный `id` через `--calendar-default ID`.
+Корневой `--calendar-read-only`, настройка профиля или `CALENDAR_READ_ONLY=1`
+запрещают запись и в REPL. Флаги Tracker/Wiki действуют отдельно.
+Проверка календаря выполняет только discovery, не доказывает право записи.
+Обычный `config check` по-прежнему проверяет Tracker.

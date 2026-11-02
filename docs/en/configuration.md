@@ -2,8 +2,8 @@
 
 # Configuration
 
-`yandex` needs to know two things before it can do anything: who you are (a
-token) and which organization to ask about (an id). This page covers every way
+Tracker/Wiki need a token and an organization ID. Calendar needs its own
+OAuth credentials and full email address, without a Tracker organization. This page covers every way
 to tell it, where it keeps what you tell it, and how to lock it down so it can
 only read.
 
@@ -381,3 +381,55 @@ you are running:
   org_id: 123456
   cloud_org_id: -
 ```
+
+## Calendar OAuth and settings
+
+Use your existing application in [Yandex OAuth](https://oauth.yandex.ru/).
+Inspect its registered permissions (also available at
+`https://oauth.yandex.ru/client/<client_id>/info`) and enable the Calendar
+permission offered to that application. One application's settings showed
+`calendar:all` and granular Calendar read/write permissions selected. An existing
+OAuth token worked for discovery/create/get on one corporate account; this
+does not isolate the minimum token grants or verify consumer-account OAuth.
+Yandex update remains blocked on server-added ORGANIZER, and deletion is
+explicitly disabled because stale-tag DELETE was accepted; see
+[current Calendar limits](commands.md#calendar). Full compatibility remains open.
+Yandex's [CalDAV OAuth example](https://www.yandex.ru/support/yandex-360/business/admin/ru/security-service-applications)
+concerns service applications and does not establish ordinary-user compatibility.
+
+Obtain a new token through your application's configured
+[OAuth authorization flow](https://www.yandex.ru/dev/id/doc/ru/codes/code-url),
+using its ClientID, registered Redirect URI and granted Calendar permissions.
+Editing the application does not add rights to an already issued token;
+authorize again and replace it. The CLI accepts issued tokens only and has no
+browser login or refresh flow. Do not paste tokens into chat or command arguments.
+
+| Profile field | Environment | Default |
+|---|---|---|
+| `oauth_token` | `YANDEX_OAUTH_TOKEN` | unset |
+| `calendar_token` | `CALENDAR_TOKEN` | unset; takes precedence over shared OAuth |
+| `calendar_username` | `CALENDAR_USERNAME` | unset; full email, e.g. `you@yandex.ru` |
+| `calendar_base_url` | `CALENDAR_BASE_URL` | `https://caldav.yandex.ru/` |
+| `calendar_timezone` | `CALENDAR_TIMEZONE` | `UTC` |
+| `calendar_default` | `CALENDAR_DEFAULT` | unset; discovered calendar ID |
+| `calendar_read_only` | `CALENDAR_READ_ONLY` | `false` |
+
+Calendar never falls back to `TRACKER_TOKEN` or IAM. Existing profile/environment
+precedence applies, including explicit `--profile` overriding the environment.
+Use environment variables, or pipe a token from your local secret store into
+one of the mutually exclusive stdin options:
+
+```bash
+yandex config set-profile calendar --calendar-username you@yandex.ru --calendar-timezone Europe/Moscow --oauth-token-stdin < /secure/local/oauth-token
+# Alternatively use --calendar-token-stdin for a calendar-specific token.
+yandex --profile calendar config check --service calendar
+```
+
+Stdin is not echoed. `config show` fully redacts both new token fields;
+profiles store credentials in clear text, so protect the local config file.
+After `calendar list`, save its exact `id` with `--calendar-default ID`.
+`--calendar-read-only` (before the command), profile setting or
+`CALENDAR_READ_ONLY=1` refuses all calendar writes, including in the REPL.
+Tracker/Wiki read-only flags are separate. Calendar diagnostics perform only
+discovery; success does not prove write access. Plain `config check` still
+checks Tracker.

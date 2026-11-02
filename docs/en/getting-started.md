@@ -10,6 +10,9 @@ This page takes you from nothing installed to your first working command. It
 assumes you have never used a terminal before. Every step says exactly what to
 type and what you should see back.
 
+For Calendar only, follow [Calendar setup](#calendar-setup); Tracker credentials
+and an organization ID are not required.
+
 ## What you need
 
 - **A computer running macOS on Apple Silicon (M1 and newer), or Linux on
@@ -384,3 +387,32 @@ it.
   another agent, and keeping it from doing damage.
 - **[Troubleshooting](troubleshooting.md)** - the command is not found, the
   token is rejected, the organization id is wrong.
+
+## Calendar setup
+
+Calendar is a limited preview for reading calendars/events and creating single
+personal events. Yandex deletion is disabled, and server-added ORGANIZER blocks
+updates to tested personal events. Live discovery/create/get passed on one
+corporate account. A targeted live agenda check with EXDATE, shifted instances
+and DST also passed; consumer OAuth remains unverified.
+
+Install the same binary, then obtain a Calendar-capable token through your
+existing OAuth application as described in
+[configuration](configuration.md#calendar-oauth-and-settings). Live ordinary-user
+OAuth compatibility is still unverified; no Tracker setup is needed.
+
+Set `YANDEX_OAUTH_TOKEN` (or higher-priority `CALENDAR_TOKEN`) through your local
+secret manager/environment. Set `CALENDAR_USERNAME` to your full email address:
+
+```bash
+export CALENDAR_USERNAME=you@yandex.ru
+export CALENDAR_TIMEZONE=Europe/Moscow
+yandex config check --service calendar
+yandex --json calendar list
+yandex --json calendar agenda --day 2026-11-02
+```
+
+An empty list means discovery found no supported calendars; an empty agenda has
+`items: []` and `truncated: false`. Event commands require `--calendar` with an
+ID from `list`, or `CALENDAR_DEFAULT`; they never pick the first calendar.
+See [commands](commands.md#calendar) for event examples and write restrictions.

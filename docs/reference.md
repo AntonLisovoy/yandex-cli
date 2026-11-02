@@ -14,6 +14,14 @@ translated.
 ## Contents
 
 - [`yandex`](#yandex)
+  - [`yandex calendar`](#yandex-calendar)
+    - [`yandex calendar agenda`](#yandex-calendar-agenda)
+    - [`yandex calendar event`](#yandex-calendar-event)
+      - [`yandex calendar event create`](#yandex-calendar-event-create)
+      - [`yandex calendar event delete`](#yandex-calendar-event-delete)
+      - [`yandex calendar event get`](#yandex-calendar-event-get)
+      - [`yandex calendar event update`](#yandex-calendar-event-update)
+    - [`yandex calendar list`](#yandex-calendar-list)
   - [`yandex completion`](#yandex-completion)
   - [`yandex config`](#yandex-config)
     - [`yandex config backend`](#yandex-config-backend)
@@ -248,6 +256,7 @@ Options:
   --timeout FLOAT          HTTP timeout, seconds.
   --read-only              Refuse Tracker write commands.
   --wiki-read-only         Refuse Wiki write commands.
+  --calendar-read-only     Refuse Calendar write commands.
   --limit-queues TEXT      Comma-separated allowed queues.
   --read-only-queues TEXT  Comma-separated queues that stay readable but refuse writes.
   --session TEXT           Session file path.
@@ -255,6 +264,7 @@ Options:
   --help                   Show this message and exit.
 
 Commands:
+  calendar    Yandex Calendar preview: read calendars and create personal events.
   completion  Print the shell completion script for SHELL.
   config      Inspect configuration, verify access, manage profiles.
   export      Write results to files.
@@ -264,6 +274,141 @@ Commands:
   skill       The agent skill file that ships with this CLI.
   tracker     Yandex Tracker: queues, issues, boards, sprints, users, projects.
   wiki        Yandex Wiki pages, tables, files, comments and access.
+```
+
+## yandex calendar
+
+```
+Usage: yandex calendar [OPTIONS] COMMAND [ARGS]...
+
+  Yandex Calendar preview: read calendars and create personal events.
+
+  Yandex deletion is disabled. Events with ORGANIZER or ATTENDEE cannot be updated. Consumer OAuth
+  remains unverified.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  agenda  Read a day, week or half-open date range across calendars.
+  event   Read or change single personal events.
+  list    List accessible calendars and their canonical IDs.
+```
+
+## yandex calendar agenda
+
+```
+Usage: yandex calendar agenda [OPTIONS]
+
+  Read a day, week or half-open date range across calendars.
+
+Options:
+  --day TEXT
+  --week TEXT
+  --from TEXT
+  --to TEXT
+  --calendar TEXT
+  --timezone TEXT
+  --limit INTEGER  [default: 100]
+  --help           Show this message and exit.
+```
+
+## yandex calendar event
+
+```
+Usage: yandex calendar event [OPTIONS] COMMAND [ARGS]...
+
+  Read or change single personal events.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  create  Create a single event; all-day end dates are exclusive.
+  delete  Delete a single personal event on a compliant server.
+  get     Read an event master and its exceptions.
+  update  Patch supplied fields, preserving omitted event data.
+```
+
+## yandex calendar event create
+
+```
+Usage: yandex calendar event create [OPTIONS]
+
+  Create a single event; all-day end dates are exclusive.
+
+Options:
+  --calendar TEXT
+  --title TEXT        [required]
+  --start TEXT        [required]
+  --end TEXT          [required]
+  --all-day
+  --timezone TEXT
+  --description TEXT
+  --location TEXT
+  --uid TEXT
+  --help              Show this message and exit.
+```
+
+## yandex calendar event delete
+
+```
+Usage: yandex calendar event delete [OPTIONS] UID
+
+  Delete a single personal event on a compliant server.
+
+  Disabled on Yandex: the server accepted stale conditional deletions. No force option is available.
+  Calendar deletion has no undo.
+
+Options:
+  --calendar TEXT
+  --if-match TEXT
+  --help           Show this message and exit.
+```
+
+## yandex calendar event get
+
+```
+Usage: yandex calendar event get [OPTIONS] UID
+
+  Read an event master and its exceptions.
+
+Options:
+  --calendar TEXT
+  --help           Show this message and exit.
+```
+
+## yandex calendar event update
+
+```
+Usage: yandex calendar event update [OPTIONS] UID
+
+  Patch supplied fields, preserving omitted event data.
+
+  Series and events with ORGANIZER or ATTENDEE are read-only. Yandex adds ORGANIZER to tested
+  personal events, so their update is blocked.
+
+Options:
+  --calendar TEXT
+  --title TEXT
+  --start TEXT
+  --end TEXT
+  --timezone TEXT
+  --description TEXT
+  --location TEXT
+  --if-match TEXT
+  --help              Show this message and exit.
+```
+
+## yandex calendar list
+
+```
+Usage: yandex calendar list [OPTIONS]
+
+  List accessible calendars and their canonical IDs.
+
+Options:
+  --help  Show this message and exit.
 ```
 
 ## yandex completion
@@ -320,7 +465,8 @@ Usage: yandex config check [OPTIONS]
   Verify the backend, credentials and API reachability.
 
 Options:
-  --help  Show this message and exit.
+  --service [tracker|calendar]  [default: tracker]
+  --help                        Show this message and exit.
 ```
 
 ## yandex config delete-profile
@@ -353,6 +499,13 @@ Usage: yandex config set-profile [OPTIONS] NAME
   Create or update a profile in the config file.
 
 Options:
+  --oauth-token-stdin             Read shared OAuth token from stdin without echo.
+  --calendar-token-stdin          Read calendar OAuth token from stdin without echo.
+  --calendar-username TEXT        Full calendar user email address.
+  --calendar-base-url TEXT
+  --calendar-timezone TEXT        IANA timezone for calendar operations.
+  --calendar-default TEXT         Default calendar ID.
+  --calendar-read-only / --no-calendar-read-only
   --token TEXT
   --iam-token TEXT
   --org-id TEXT

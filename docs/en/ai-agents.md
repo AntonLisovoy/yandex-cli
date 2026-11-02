@@ -418,3 +418,19 @@ from the inside.
 
 The four settings are covered in full, with the message each one produces, in
 [configuration](configuration.md#read-only-and-restricted-modes).
+
+## Calendar from an agent
+
+Use the installed skill and shell commands; Calendar is not exposed by `yandex
+mcp`. Check `config check --service calendar`, then `calendar list` and select
+an exact ID. Calendar needs its own OAuth/full email settings, without Tracker
+credentials. Corporate-account OAuth discovery/create/get passed live; consumer
+OAuth remains unverified. Yandex updates are blocked on server-added ORGANIZER;
+Yandex deletion is explicitly disabled because stale-tag DELETE was accepted.
+
+Give reading agents `--calendar-read-only` or `CALENDAR_READ_ONLY=1`.
+Read a target with `event get` before an authorized write; only single personal
+events without organizer/attendees are writable. Preserve its UID/calendar ID
+and use the returned strong ETag. Calendar writes have **no undo**.
+After a timeout or read-back failure, check the reported UID in that calendar;
+never blindly repeat create/update/delete. See [calendar commands](commands.md#calendar).

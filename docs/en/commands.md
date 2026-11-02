@@ -62,6 +62,7 @@ from "what is there" to "what does this command take".
 | `--pretty` | Indent JSON for reading; it is compact by default. |
 | `--profile NAME` | Use a saved configuration profile for this command. |
 | `--read-only` / `--wiki-read-only` | Refuse Tracker / Wiki write commands. |
+| `--calendar-read-only` | Refuse Calendar write commands. |
 | `--limit-queues Q1,Q2` | Restrict which queues may be touched at all. |
 | `--timeout SECONDS` | HTTP timeout for this command. |
 
@@ -71,8 +72,8 @@ covered below, in [JSON output for scripts](#json-output-for-scripts).
 
 ## Command groups
 
-There are two domains - Tracker and Wiki - plus a handful of commands that
-belong to the CLI itself rather than to either API.
+There are three domains: Tracker, Wiki and [Calendar](#calendar), plus commands
+that belong to the CLI itself.
 
 ### Tracker
 
@@ -891,3 +892,89 @@ That page is generated from the program itself, so it cannot drift out of date
 with the version you have installed. For the same reason it is **English
 only**: the help text is printed by the CLI, and the CLI does not speak
 Russian. The guides around it are translated; the reference is not.
+
+## Calendar
+
+The first Calendar release is a limited preview: list, agenda, get and create.
+Yandex update/delete are outside its supported workflow.
+
+Calendar is independent of Tracker/Wiki and uses the same root output flags,
+JSON error envelope (exit 1), `--out`, `--select`, profiles and REPL.
+There are no Calendar MCP tools. Put output/read-only flags before `calendar`.
+
+Live Yandex checks on one corporate account verified discovery, create and get.
+Yandex added ORGANIZER to participant-free events, so the existing personal-event
+guard blocks their update. Deletion is explicitly disabled for HTTPS
+`caldav.yandex.ru` on port 443: live stale-tag DELETE requests were accepted, so
+conditional deletion cannot be relied on. There is no force option. Full CRUD,
+consumer-account OAuth remain unverified. A targeted live agenda check passed
+with EXDATE, shifted instances and an IANA timezone DST transition.
+The update/delete examples below describe the commands on compliant servers.
+
+```bash
+yandex --json calendar list
+# Copy an exact id from list, not its display name:
+CALENDAR_ID='https://caldav.yandex.ru/calendars/you/example/'
+yandex --json calendar agenda --calendar "$CALENDAR_ID" --day 2026-11-02
+yandex --json calendar agenda --calendar "$CALENDAR_ID" --week 2026-11-02 --timezone Europe/Berlin
+yandex --json calendar agenda --from 2026-11-02T00:00 --to 2026-11-09T00:00 --limit 200
+yandex --json calendar event get event-uid --calendar "$CALENDAR_ID"
+yandex --json calendar event create --calendar "$CALENDAR_ID" --title 'Focus' --start 2026-11-02T10:00 --end 2026-11-02T11:00 --timezone Europe/Moscow --description @notes.txt --location Home --uid unique-focus-uid
+yandex --json calendar event create --calendar "$CALENDAR_ID" --title Holiday --all-day --start 2026-11-02 --end 2026-11-03
+```
+
+On a compliant generic server only, with its discovered calendar ID:
+
+```bash
+yandex --json calendar event update unique-focus-uid --calendar "$CALENDAR_ID" --title 'Focus time' --description '' --if-match '"current-etag"'
+yandex --json calendar event delete unique-focus-uid --calendar "$CALENDAR_ID" --if-match '"latest-etag"'
+```
+
+Replace example IDs/ETags with returned values. `calendar_id` is a discovered
+canonical collection URL; `uid` identifies an event only within that calendar,
+and `recurrence_id` identifies an occurrence. A UID is not a resource filename.
+`get` returns `{event, exceptions}`: for a series, its master and detached
+overrides, without expanding the series. If the resource contains only detached
+instances, `event` is `null` and `exceptions` contains every known instance;
+agenda includes those instances without inventing the missing series.
+An empty calendar is valid.
+
+Agenda defaults to today; `--week DATE` covers Monday through the following
+Monday. Choose one of `--day`, `--week`, or both `--from` and `--to`.
+Periods use `[from,to)` and are at most 366 days. Without an explicit/default
+calendar, agenda reads all discovered calendars. It returns
+`{items, truncated, from, to, timezone}`; items are expanded, sorted occurrences
+without cancellations. The default limit is 100 (allowed 1–1000); `truncated`
+means more results exist. Errors in any selected calendar fail the entire agenda.
+
+Reads support RRULE, RDATE (including PERIOD), EXDATE and moved/cancelled
+overrides. Agenda rejects EXRULE and `RANGE=THISANDFUTURE` explicitly; `get`
+can still return the unexpanded series. Full collections are fetched to retain
+moved-in overrides, with bounds of 8 MiB per XML response, 2 MiB per resource,
+10,000 DAV responses and 10,000 processed recurrence candidates shared across
+selected calendars. Historical, excluded and cancelled candidates count.
+A narrow day can therefore fail because of unrelated history; reducing the
+period alone does not necessarily help. Select fewer calendars or reduce series
+complexity in the calendar application; the CLI does not silently omit data.
+
+Offsets identify an exact instant; local input uses `--timezone`, then the
+configured zone (default UTC). Ambiguous/nonexistent DST input requires an
+explicit offset. All-day end dates are exclusive: Nov 2 to Nov 3 is one day.
+Update must supply both `--start` and `--end` when changing time and cannot
+switch all-day/timed type. Omitted fields are preserved; empty description or
+location clears the field. Empty titles and empty patches are rejected.
+
+Writes support only single personal events. Series, detached occurrences,
+multiple VEVENT resources and events with ORGANIZER or ATTENDEE cannot be
+updated/deleted; create offers no participants or recurrence. Invitations,
+RSVP, calendar creation/sharing, offline sync and calendar undo are absent.
+Create uses a unique UID and `If-None-Match: *`; supported update/delete read first and
+require a strong ETag with `If-Match`. Stale ETags/HTTP 412 are conflicts,
+never automatic overwrites. Use the exact latest quoted ETag from `get`.
+The transport requests identity encoding. Only for HTTPS `caldav.yandex.ru`
+on the default port, unencoded bare ASCII-decimal ETags are returned in their
+quoted form for Yandex compatibility. Missing, weak and other malformed tags
+still prevent writes; encoded tags are never converted.
+After a timeout or accepted-write/read-back error, do not repeat the write:
+use the reported calendar ID/UID to read back and determine its outcome first.
+Session history records operation/IDs only, without event bodies or undo.

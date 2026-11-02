@@ -4,8 +4,8 @@
 
 ## What it does
 
-`yandex` is a command line interface to **Yandex Tracker** and **Yandex
-Wiki**. It remembers which issue you are working on, so you name it once
+`yandex` is a command line interface to **Yandex Tracker**, **Yandex
+Wiki** and **Yandex Calendar**. It remembers which issue you are working on, so you name it once
 instead of pasting the same key into every command:
 
 ```bash
@@ -86,3 +86,16 @@ npx skills add AntonLisovoy/yandex-cli
 ## License
 
 Apache-2.0
+
+## Calendar
+
+Calendar is a limited preview. `calendar list`, `calendar agenda` and
+`calendar event get/create` use an independent OAuth + CalDAV backend:
+no Tracker token or org ID required.
+Start with [Calendar setup](docs/en/getting-started.md#calendar-setup).
+Series/participant events are read-only; single personal writes have no undo.
+Yandex deletion is disabled; server-added ORGANIZER blocks updates to tested
+personal events. Corporate-account discovery/create/get passed live.
+Live agenda with EXDATE, shifted instances and DST passed a targeted check.
+Consumer OAuth remains unverified; this preview does not promise full Yandex
+CRUD. See [Calendar limits](docs/en/commands.md#calendar).
