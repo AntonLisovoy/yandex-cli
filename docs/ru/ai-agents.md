@@ -396,7 +396,8 @@ Skill и MCP-сервер можно использовать вместе.
 Сохраните профиль только для чтения и отдайте его агенту:
 
 ```bash
-yandex config set-profile agent --token y0_exampletokenvalue --org-id 123456 --read-only --limit-queues TREK --not-current
+yandex config set-profile agent --org-id 123456 --read-only --limit-queues TREK --not-current
+yandex --profile agent auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
 ```
 
 `--not-current` оставляет вашу собственную работу на вашем собственном профиле.
@@ -449,3 +450,7 @@ yandex --profile agent tracker issue find -q "Queue: TREK AND Updated: week()"
 владелец подтвердил получение приглашения, обновления и отмены участия. Удаление Яндекса отключено: live-сервер принял DELETE
 с устаревшим ETag. Для обычного аккаунта принят тот же клиентский OAuth-путь; отдельная live-проверка не требуется. Минимальные права не проверены. См. [команды](commands.md#календарь): инициализация организатора,
 режимы scheduling, метаданные результата и оставшиеся ограничения.
+
+## Авторизация для агентов
+
+Используйте `--json auth status` для источников, `--token-stdin` для секретов и явный `--profile` для изоляции. Проверяйте saved даже при ненулевом коде --check: не повторяйте уже сохранённый add. При migration_required выполните явный auth migrate; не запрашивайте токены в чате.

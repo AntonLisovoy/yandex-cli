@@ -359,3 +359,7 @@ a conflict, never proof that an earlier create succeeded or permission to overwr
 `--calendar-read-only` is an independent root flag and survives REPL. Discovery
 diagnostics do not prove write access. History retains IDs only, not bodies.
 Calendar is CLI/REPL only: `yandex mcp` exposes Tracker/Wiki, no Calendar tools.
+
+## Named service tokens
+
+Use `yandex --profile NAME --json auth status` before credential troubleshooting. Explicit profiles never inherit credential environment variables. Tokens are profile-local, with one assignment per service; do not duplicate a secret across services. Use auth add/replace with --token-stdin, auth assign for rebinding, and --check to verify the saved profile. Never ask the user to paste a secret into chat or pass it in argv. On nonzero --check inspect saved: true before retrying. Migrate legacy profiles only through explicit auth migrate; this also repairs mixed formats while preserving assignments. New profiles use auth v1, and legacy setters cannot create them. Restart running MCP after changes. Mail is not supported.

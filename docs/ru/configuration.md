@@ -20,14 +20,15 @@
 | 1 | Встроенные значения по умолчанию | `api_base_url=https://api.tracker.yandex.net`, `wiki_base_url=https://api.wiki.yandex.net`, `timeout=30.0` |
 | 2 | Текущий профиль | `~/.yandex-cli/config.json` |
 | 3 | Переменные окружения | `export TRACKER_TOKEN=y0_...` |
-| 4 | Флаги командной строки | `yandex --token y0_... config check` |
+| 4 | Флаги командной строки | `yandex config check` |
 
 То есть `TRACKER_ORG_ID`, экспортированный в оболочке, перебивает
 идентификатор организации из профиля, а `--org-id` в командной строке
 перебивает и то и другое.
 
 > **Единственное исключение.** Явно переданный `--profile NAME` ставит этот
-> профиль **выше** окружения — наоборот по отношению к порядку из таблицы.
+> профиль **выше** окружения для настроек. Credential-переменные полностью
+> исключаются, даже когда у сервиса нет назначения в профиле.
 > Запрос профиля по имени означает, что вам нужен именно он, а не то, что
 > случайно экспортировано в этом окне. Без `--profile` текущий профиль остаётся
 > на слое 2 и окружение побеждает.
@@ -58,7 +59,8 @@ yandex config show
 везде стоит вместо вашего собственного токена:
 
 ```bash
-yandex config set-profile work --token y0_exampletokenvalue --org-id 123456
+yandex config set-profile work --org-id 123456
+yandex --profile work auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
 ```
 
 ```
@@ -73,7 +75,8 @@ yandex config set-profile work --token y0_exampletokenvalue --org-id 123456
 профиль, не переключаясь на него:
 
 ```bash
-yandex config set-profile cloud --token y0_exampletokenvalue --cloud-org-id bpf1abc2def3ghi4jkl5 --not-current
+yandex config set-profile cloud --cloud-org-id bpf1abc2def3ghi4jkl5 --not-current
+yandex --profile cloud auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
 ```
 
 Кроме учётных данных `set-profile` принимает `--api-base-url`,
@@ -144,7 +147,7 @@ yandex config delete-profile cloud
       "limit_queues": [],
       "org_id": "123456",
       "read_only_queues": [],
-      "token": "y0_exampletokenvalue"
+      "auth": {"version": 1, "tokens": {}, "services": {}}
     }
   }
 }
@@ -356,8 +359,10 @@ AI-агента надёжный вариант — задать перемен�
 Дайте каждой организации свой профиль:
 
 ```bash
-yandex config set-profile acme --token y0_exampletokenvalue --org-id 123456
-yandex config set-profile cloud --token y0_exampletokenvalue --cloud-org-id bpf1abc2def3ghi4jkl5 --not-current
+yandex config set-profile acme --org-id 123456
+yandex --profile acme auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
+yandex config set-profile cloud --cloud-org-id bpf1abc2def3ghi4jkl5 --not-current
+yandex --profile cloud auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
 ```
 
 Переключайтесь, когда меняете контекст надолго:
@@ -422,14 +427,14 @@ refresh-flow отсутствуют. Не вставляйте токены в �
 | `calendar_default` | `CALENDAR_DEFAULT` | не задано; обнаруженный ID календаря |
 | `calendar_read_only` | `CALENDAR_READ_ONLY` | `false` |
 
-Календарь не использует `TRACKER_TOKEN` или IAM как fallback. Действуют обычные
-приоритеты профилей и окружения, включая приоритет явно указанного `--profile`.
-Используйте окружение или передайте токен из локального хранилища в одну из
-взаимоисключающих stdin-опций:
+Поля токенов в таблице относятся к legacy-профилям и окружению. В новых
+профилях Календарю назначается именованный OAuth-токен, который может также
+обслуживать Трекер/Вики. IAM не поддерживается. Явный --profile исключает
+credential-переменные окружения. Сохраните токен через auth:
 
 ```bash
-yandex config set-profile calendar --calendar-username you@yandex.ru --calendar-timezone Europe/Moscow --oauth-token-stdin < /secure/local/oauth-token
-# Для отдельного токена Календаря используйте --calendar-token-stdin.
+yandex config set-profile calendar --calendar-username you@yandex.ru --calendar-timezone Europe/Moscow
+yandex --profile calendar auth add main --services calendar --token-stdin < /secure/local/oauth-token
 yandex --profile calendar config check --service calendar
 ```
 
@@ -440,3 +445,70 @@ Stdin не выводится. `config show` полностью скрывает
 запрещают запись и в REPL. Флаги Tracker/Wiki действуют отдельно.
 Проверка календаря выполняет только discovery, не доказывает право записи.
 Обычный `config check` по-прежнему проверяет Tracker.
+
+## Именованные токены и назначения сервисов
+
+Каждый профиль независимо хранит свои токены. Сохраните секрет один раз и
+назначьте его имя любому сочетанию Трекера, Вики и Календаря. Назначение не
+выдаёт OAuth-права; `auth check` проверяет только доступ для чтения.
+
+```bash
+yandex --profile work auth setup
+yandex --profile work auth status
+yandex --profile work auth check
+```
+
+Для автоматизации создайте профиль и настройки сервисов, затем передайте секреты
+через stdin. Новые команды не принимают секрет аргументом командной строки.
+
+```bash
+yandex config set-profile work --org-id 123456
+yandex --profile work auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
+yandex --profile work auth add calendar --services calendar --token-stdin < /secure/local/calendar-token
+yandex config set-profile work --calendar-username you@example.com --calendar-timezone Europe/Moscow
+yandex --profile work auth check
+yandex --profile work auth replace main --token-stdin --check < /secure/local/new-token
+yandex --profile work auth assign main --services calendar --check
+```
+
+`auth add NAME --create-profile` создаёт явно названный профиль, не делая его
+текущим. Без `--services` токен сохраняется неназначенным. Статический IAM задаётся
+через `--kind iam --services tracker,wiki`; Календарь IAM не поддерживает.
+`all` означает три реализованных сервиса; почта пока недоступна. Перед удалением
+назначенного токена через `auth remove NAME` выполните `auth unassign --services
+calendar`. `assign` меняет только перечисленные сервисы, а `replace` затрагивает
+все сервисы, использующие этот токен.
+
+**Явный `--profile` исключает все credential-переменные окружения, включая
+`.env`, даже если сервис в профиле не настроен.** Остальные настройки сохраняют
+прежние приоритеты. Без `--profile` токены окружения могут перекрыть текущий
+профиль; status показывает фактический источник. Явные credential-флаги остаются
+допустимым переопределением. При ошибке другой токен автоматически не пробуется.
+
+Прямые команды по умолчанию работают без сети. `--check` у add/replace/assign
+проверяет сохранённый профиль после записи, игнорируя временные credentials.
+При сбое проверки код возврата ненулевой, `saved: true`; секрет остаётся сохранён.
+Мастер проверяет автоматически. `auth status` работает локально и показывает
+последнюю проверку с датой; кешируются только результаты токенов профиля с
+привязкой к идентификатору и версии токена. После замены статус not_checked.
+Успех проверки не гарантирует права записи. Секреты и фрагменты старых токенов
+полностью скрываются.
+
+Существующие legacy-профили продолжают читаться. Перед новыми командами изменения:
+
+```bash
+yandex --profile work auth migrate
+```
+
+Миграция явная: объединяет одинаковые credentials внутри профиля, сохраняя
+назначения. Та же команда восстанавливает смешанный формат, не меняя новых
+назначений. Подозрительные значения переносятся с предупреждением о замене.
+Новые профили используют auth v1; старые credential-setters работают только на
+существующих legacy-профилях. Старые CLI игнорируют auth v1 и могут подхватить
+окружение: обновите все установки до миграции. После изменения токенов
+перезапустите работающий MCP; REPL перечитывает настройки между командами.
+Секреты остаются в локальном JSON с доступом только владельца, где это поддерживается.
+
+## Изменения совместимости
+
+Новые профили хранят токены через `auth`, независимо друг от друга. Старые профили читаются до явного `auth migrate`; старые версии CLI не смогут использовать перенесённые токены. Явный `--profile` игнорирует токены из переменных окружения и `.env`. Флаги токенов сохраняют приоритет над выбранным профилем. Значения токенов полностью скрыты в диагностике. HTTP 401/403 не вызывает переключения на другой токен.

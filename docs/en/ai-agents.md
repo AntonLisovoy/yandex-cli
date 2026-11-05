@@ -389,7 +389,8 @@ The fix is to give the agent a narrower CLI than the one you use:
 Save a profile that is read-only and hand the agent that:
 
 ```bash
-yandex config set-profile agent --token y0_exampletokenvalue --org-id 123456 --read-only --limit-queues TREK --not-current
+yandex config set-profile agent --org-id 123456 --read-only --limit-queues TREK --not-current
+yandex --profile agent auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
 ```
 
 `--not-current` keeps your own work on your own profile. Three of the four
@@ -442,3 +443,7 @@ changes on servers with automatic scheduling. A targeted live test passed for me
 confirmed receipt of invitation, update and cancellation notifications. Yandex deletion stays disabled because a live server
 accepted stale-tag DELETE. Consumer-account OAuth parity is assumed; no separate live check is required. Minimum grants remain unverified. See [commands](commands.md#calendar) for organizer initialization,
 scheduling modes, result metadata and remaining write limits.
+
+## Authentication for agents
+
+Use `--json auth status` to inspect the source, `--token-stdin` to provide secrets, and explicit `--profile` for isolation. Check `saved` even on a nonzero exit from `--check`; do not repeat a saved add. Handle `migration_required` with explicit `auth migrate`, and never request tokens in chat.

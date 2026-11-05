@@ -1034,3 +1034,7 @@ Errors use `next_action`: `fix-input`, `reread-and-reconsider`, `check-permissio
 calendar ID and stable UID. Supply `--uid` on create for reliable cross-invocation
 recovery; errors also include a generated UID when available. An existing UID is
 a conflict, never proof that an earlier create succeeded or permission to overwrite.
+
+## Authentication commands
+
+`auth add`, `replace`, `assign`, `unassign`, `remove`, `status`, `check`, `migrate`, and `setup` manage profile credentials. See [configuration](configuration.md#named-tokens-and-service-assignments) for complete flows and [reference](../reference.md) for options.

@@ -163,51 +163,33 @@ Where to look:
   organization id is shown under the organization's name on the home page;
   click to the right of it to copy it.
 
-If you are not sure which kind you have, try one on the command line before you
-save anything. Passing the token and the id as options leaves nothing behind on
-disk, so you can try the other one straight away:
+Choose the organization type shown in your account. The setup wizard prompts for
+the appropriate identifier and checks access after saving:
 
 ```bash
-yandex --token y0_... --org-id 123456 config check
+yandex --profile work auth setup tracker wiki
 ```
 
-```bash
-yandex --token y0_... --cloud-org-id bpf1abc2def3ghi4jkl5 config check
-```
-
-One of the two answers `✓ Connected as <your name>`. That is the one to save in
-step 6. When Tracker refuses the credentials instead, the last line of the error
-names the header that was actually sent - `X-Org-ID=...` or
-`X-Cloud-Org-ID=...` - so you can see which of the two you just tried.
-
-**Never set both at once.** The CLI stops before it sends anything:
-
-```
-  ✗ Both org_id and cloud_org_id are set — the API accepts exactly one.
-      Unset TRACKER_ORG_ID or TRACKER_CLOUD_ORG_ID (or pass only one of --org-id / --cloud-org-id).
-```
-
-This is why the trial above uses options rather than a saved profile: saving a
-profile twice *merges* the two attempts, leaving both ids in it and producing
-exactly this error every time. If that has already happened, delete the profile
-with `yandex config delete-profile work` and save it again with only the id you
-need.
+Use either `org_id` or `cloud_org_id`; setting both is an error.
+If you used the wizard, your profile is ready and you can skip step 6.
 
 ## 6. Save a profile
 
 A profile is the token and the organization id, written once into a file that
-`yandex` reads every time. Substitute your own token and id, and use whichever
-of the two id options worked in step 5:
+`yandex` reads every time. Substitute your own token and id, and use the
+organization type identified in step 5:
 
 ```bash
-yandex config set-profile work --token y0_... --org-id 123456
+yandex config set-profile work --org-id 123456
+yandex --profile work auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
 ```
 
 ```bash
-yandex config set-profile work --token y0_... --cloud-org-id bpf1abc2def3ghi4jkl5
+yandex config set-profile work --cloud-org-id bpf1abc2def3ghi4jkl5
+yandex --profile work auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
 ```
 
-Either one prints:
+The `config set-profile` command prints:
 
 ```
   profile: work
@@ -418,3 +400,7 @@ An empty list means discovery found no supported calendars; an empty agenda has
 `items: []` and `truncated: false`. Event commands require `--calendar` with an
 ID from `list`, or `CALENDAR_DEFAULT`; they never pick the first calendar.
 See [commands](commands.md#calendar) for event examples and write restrictions.
+
+## Profile authentication
+
+For a new setup, run `yandex auth setup`. It creates a profile, accepts a hidden token, assigns services and checks read access. For scripts and migration see [configuration](configuration.md#named-tokens-and-service-assignments).

@@ -20,13 +20,14 @@ opinion wins.
 | 1 | Built-in defaults | `api_base_url=https://api.tracker.yandex.net`, `wiki_base_url=https://api.wiki.yandex.net`, `timeout=30.0` |
 | 2 | The current profile | `~/.yandex-cli/config.json` |
 | 3 | Environment variables | `export TRACKER_TOKEN=y0_...` |
-| 4 | Command-line flags | `yandex --token y0_... config check` |
+| 4 | Command-line flags | `yandex config check` |
 
 So a `TRACKER_ORG_ID` exported in your shell beats the org id saved in the
 profile, and `--org-id` on the command line beats both.
 
 > **The one exception.** Passing `--profile NAME` explicitly puts that profile
-> **above** the environment - the reverse of the order in the table. Asking for
+> **above** the environment for settings. Credential environment variables
+> are excluded entirely, even when a service has no profile assignment. Asking for
 > a profile by name means you want that profile, not whatever happens to be
 > exported in this window. Without `--profile`, the current profile stays at
 > layer 2 and the environment wins.
@@ -51,11 +52,11 @@ handing to a script - and switch between them by name.
 ### Creating and switching
 
 **Create one.** `set-profile` creates it if it does not exist and updates the
-fields you name if it does. `y0_exampletokenvalue` stands in for your own token
-throughout this page:
+non-secret fields you name if it does. Add named credentials through auth:
 
 ```bash
-yandex config set-profile work --token y0_exampletokenvalue --org-id 123456
+yandex config set-profile work --org-id 123456
+yandex --profile work auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
 ```
 
 ```
@@ -70,10 +71,11 @@ Saving a profile also makes it the current one. Pass `--not-current` to add a
 profile without switching to it:
 
 ```bash
-yandex config set-profile cloud --token y0_exampletokenvalue --cloud-org-id bpf1abc2def3ghi4jkl5 --not-current
+yandex config set-profile cloud --cloud-org-id bpf1abc2def3ghi4jkl5 --not-current
+yandex --profile cloud auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
 ```
 
-Besides the credentials, `set-profile` accepts `--api-base-url`,
+For service settings, `set-profile` accepts `--api-base-url`,
 `--wiki-base-url`, `--limit-queues`, `--read-only` / `--no-read-only` and
 `--wiki-read-only` / `--no-wiki-read-only`.
 
@@ -141,7 +143,7 @@ the active profile and a `profiles` object holding the rest:
       "limit_queues": [],
       "org_id": "123456",
       "read_only_queues": [],
-      "token": "y0_exampletokenvalue"
+      "auth": {"version": 1, "tokens": {}, "services": {}}
     }
   }
 }
@@ -349,8 +351,10 @@ agent itself runs in, where it has no reason to look. See
 Give each organization its own profile:
 
 ```bash
-yandex config set-profile acme --token y0_exampletokenvalue --org-id 123456
-yandex config set-profile cloud --token y0_exampletokenvalue --cloud-org-id bpf1abc2def3ghi4jkl5 --not-current
+yandex config set-profile acme --org-id 123456
+yandex --profile acme auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
+yandex config set-profile cloud --cloud-org-id bpf1abc2def3ghi4jkl5 --not-current
+yandex --profile cloud auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
 ```
 
 Switch when you change context for a while:
@@ -416,18 +420,18 @@ browser login or refresh flow. Do not paste tokens into chat or command argument
 | `calendar_default` | `CALENDAR_DEFAULT` | unset; discovered calendar ID |
 | `calendar_read_only` | `CALENDAR_READ_ONLY` | `false` |
 
-Calendar never falls back to `TRACKER_TOKEN` or IAM. Existing profile/environment
-precedence applies, including explicit `--profile` overriding the environment.
-Use environment variables, or pipe a token from your local secret store into
-one of the mutually exclusive stdin options:
+The credential fields in this table describe legacy profiles and environment-only
+usage. New profiles assign a named OAuth token to Calendar; it may also serve
+Tracker/Wiki. Calendar does not accept IAM. Explicit --profile excludes credential
+environment variables. Save the token using the new auth interface:
 
 ```bash
-yandex config set-profile calendar --calendar-username you@yandex.ru --calendar-timezone Europe/Moscow --oauth-token-stdin < /secure/local/oauth-token
-# Alternatively use --calendar-token-stdin for a calendar-specific token.
+yandex config set-profile calendar --calendar-username you@yandex.ru --calendar-timezone Europe/Moscow
+yandex --profile calendar auth add main --services calendar --token-stdin < /secure/local/oauth-token
 yandex --profile calendar config check --service calendar
 ```
 
-Stdin is not echoed. `config show` fully redacts both new token fields;
+Stdin is not echoed. `config show` fully redacts all credentials;
 profiles store credentials in clear text, so protect the local config file.
 After `calendar list`, save its exact `id` with `--calendar-default ID`.
 `--calendar-read-only` (before the command), profile setting or
@@ -435,3 +439,69 @@ After `calendar list`, save its exact `id` with `--calendar-default ID`.
 Tracker/Wiki read-only flags are separate. Calendar diagnostics perform only
 discovery; success does not prove write access. Plain `config check` still
 checks Tracker.
+
+## Named tokens and service assignments
+
+Each profile owns its tokens independently. Save a secret once and assign its
+name to any combination of Tracker, Wiki and Calendar. Assignments do not grant
+OAuth permissions; `auth check` tests read access only.
+
+```bash
+yandex --profile work auth setup
+yandex --profile work auth status
+yandex --profile work auth check
+```
+
+For unattended setup, create the profile and set service metadata, then read
+secrets from stdin. No secret is accepted as an argument by the new commands.
+
+```bash
+yandex config set-profile work --org-id 123456
+yandex --profile work auth add main --services tracker,wiki --token-stdin < /secure/local/oauth-token
+yandex --profile work auth add calendar --services calendar --token-stdin < /secure/local/calendar-token
+yandex config set-profile work --calendar-username you@example.com --calendar-timezone Europe/Moscow
+yandex --profile work auth check
+yandex --profile work auth replace main --token-stdin --check < /secure/local/new-token
+yandex --profile work auth assign main --services calendar --check
+```
+
+`auth add NAME --create-profile` creates an explicitly named profile without
+making it current. Omit `--services` to save an unassigned token. Use
+`--kind iam --services tracker,wiki` for static IAM; IAM does not support Calendar.
+`all` means the three services implemented today; Mail is not yet available.
+Use `auth unassign --services calendar` before removing an assigned token with
+`auth remove NAME`. `assign` changes only listed services; `replace` affects
+all services sharing the named token.
+
+**Explicit `--profile` ignores all credential environment variables, including
+`.env`, even when that profile has no assignment for the service.** Other settings
+retain normal precedence. Without `--profile`, environment credentials can win
+over the current profile; status shows the effective source. Explicit credential
+flags remain a supported override. A failed request never retries another token.
+
+Direct changes are offline by default. `--check` on add/replace/assign checks the
+saved profile after committing, ignoring temporary credential overrides. A failed
+probe exits nonzero with `saved: true`; the secret remains saved. The wizard checks
+automatically. `auth status` is offline and shows the last check with its timestamp;
+only profile-token results are cached, tied to token identity/revision. Changed
+credentials are `not_checked`. A successful probe does not prove write permissions.
+All secrets, including legacy token fragments, are fully redacted.
+
+Existing legacy profiles remain readable. Before using auth mutation commands:
+
+```bash
+yandex --profile work auth migrate
+```
+
+Migration is explicit, deduplicates identical credentials within the profile and
+preserves assignments. The same command repairs a mixed old/new format without
+changing new assignments. Suspicious legacy values are retained and flagged for
+replacement. New profiles use auth v1; legacy credential setters only work on
+existing legacy profiles. Old CLI binaries ignore auth v1 and may fall back to
+environment credentials: update all installations before migrating. Restart an
+already running MCP server after credential changes; REPL reloads between commands.
+Credentials remain in the local JSON with owner-only permissions where supported.
+
+## Compatibility changes
+
+New profiles store credentials through `auth`, independently for each profile. Existing legacy profiles remain readable until explicit `auth migrate`; older CLI binaries cannot use migrated credentials. Explicit `--profile` ignores credential environment variables and `.env` credentials. Credential flags still override the selected profile. Token values are fully redacted in diagnostics. HTTP 401/403 never triggers a fallback to another token.

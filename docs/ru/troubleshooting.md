@@ -427,3 +427,7 @@ yandex config show
   локального времени при DST задайте явный UTC offset.
 
 `config check --service calendar` проверяет discovery, а не право записи.
+
+## Диагностика авторизации
+
+При 401/403 проверьте сервис и источник токена в ошибке, затем выполните auth check --services SERVICE. Назначение не выдаёт scopes. mixed_auth_format исправляется через auth migrate; неизвестные версии автоматически не переписываются. До миграции обновите все установки CLI/MCP.

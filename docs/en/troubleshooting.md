@@ -415,3 +415,7 @@ those, the problem is usually reproducible on the first try.
   input, supply an explicit UTC offset.
 
 `config check --service calendar` checks discovery only, not write permission.
+
+## Authentication diagnostics
+
+On 401/403, inspect the service and token source in the error, then run `auth check --services SERVICE`. Assignment does not grant scopes. `mixed_auth_format` is repaired by `auth migrate`; unknown versions are never rewritten automatically. Update old CLI/MCP installations before migration.

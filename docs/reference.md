@@ -14,6 +14,16 @@ translated.
 ## Contents
 
 - [`yandex`](#yandex)
+  - [`yandex auth`](#yandex-auth)
+    - [`yandex auth add`](#yandex-auth-add)
+    - [`yandex auth assign`](#yandex-auth-assign)
+    - [`yandex auth check`](#yandex-auth-check)
+    - [`yandex auth migrate`](#yandex-auth-migrate)
+    - [`yandex auth remove`](#yandex-auth-remove)
+    - [`yandex auth replace`](#yandex-auth-replace)
+    - [`yandex auth setup`](#yandex-auth-setup)
+    - [`yandex auth status`](#yandex-auth-status)
+    - [`yandex auth unassign`](#yandex-auth-unassign)
   - [`yandex calendar`](#yandex-calendar)
     - [`yandex calendar agenda`](#yandex-calendar-agenda)
     - [`yandex calendar capabilities`](#yandex-calendar-capabilities)
@@ -265,6 +275,7 @@ Options:
   --help                   Show this message and exit.
 
 Commands:
+  auth        Manage profile-owned tokens and service assignments.
   calendar    Yandex Calendar preview: read, create and edit single events.
   completion  Print the shell completion script for SHELL.
   config      Inspect configuration, verify access, manage profiles.
@@ -275,6 +286,138 @@ Commands:
   skill       The agent skill file that ships with this CLI.
   tracker     Yandex Tracker: queues, issues, boards, sprints, users, projects.
   wiki        Yandex Wiki pages, tables, files, comments and access.
+```
+
+## yandex auth
+
+```
+Usage: yandex auth [OPTIONS] COMMAND [ARGS]...
+
+  Manage profile-owned tokens and service assignments.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  add       Save a named token; optionally assign services and check after saving.
+  assign    Assign services to an existing token, replacing their assignments.
+  check     Probe selected services using effective credentials; does not change assignments.
+  migrate   Explicitly migrate legacy credentials.
+  remove    Delete an unassigned token; unassign its services first.
+  replace   Replace a secret for every service assigned to this token.
+  setup     Interactively configure tokens and services with hidden input and verification.
+  status    Show assignments, effective sources and cached checks without network access.
+  unassign  Remove service assignments without deleting tokens.
+```
+
+## yandex auth add
+
+```
+Usage: yandex auth add [OPTIONS] NAME
+
+  Save a named token; optionally assign services and check after saving.
+
+Options:
+  --services TEXT     tracker,wiki,calendar or all; omit to save unassigned.
+  --kind [oauth|iam]
+  --token-stdin
+  --create-profile
+  --check
+  --help              Show this message and exit.
+```
+
+## yandex auth assign
+
+```
+Usage: yandex auth assign [OPTIONS] NAME
+
+  Assign services to an existing token, replacing their assignments.
+
+Options:
+  --services TEXT  [required]
+  --check
+  --help           Show this message and exit.
+```
+
+## yandex auth check
+
+```
+Usage: yandex auth check [OPTIONS]
+
+  Probe selected services using effective credentials; does not change assignments.
+
+Options:
+  --services TEXT
+  --help           Show this message and exit.
+```
+
+## yandex auth migrate
+
+```
+Usage: yandex auth migrate [OPTIONS]
+
+  Explicitly migrate legacy credentials. Older CLI binaries cannot read migrated credentials.
+
+Options:
+  --help  Show this message and exit.
+```
+
+## yandex auth remove
+
+```
+Usage: yandex auth remove [OPTIONS] NAME
+
+  Delete an unassigned token; unassign its services first.
+
+Options:
+  --help  Show this message and exit.
+```
+
+## yandex auth replace
+
+```
+Usage: yandex auth replace [OPTIONS] NAME
+
+  Replace a secret for every service assigned to this token.
+
+Options:
+  --token-stdin
+  --check
+  --help         Show this message and exit.
+```
+
+## yandex auth setup
+
+```
+Usage: yandex auth setup [OPTIONS] [SERVICES]...
+
+  Interactively configure tokens and services with hidden input and verification.
+
+Options:
+  --help  Show this message and exit.
+```
+
+## yandex auth status
+
+```
+Usage: yandex auth status [OPTIONS]
+
+  Show assignments, effective sources and cached checks without network access.
+
+Options:
+  --help  Show this message and exit.
+```
+
+## yandex auth unassign
+
+```
+Usage: yandex auth unassign [OPTIONS]
+
+  Remove service assignments without deleting tokens.
+
+Options:
+  --services TEXT  [required]
+  --help           Show this message and exit.
 ```
 
 ## yandex calendar
